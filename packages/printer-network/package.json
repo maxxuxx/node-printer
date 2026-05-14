@@ -1,0 +1,52 @@
+{
+  "name": "@node-printer/printer-network",
+  "version": "0.1.0",
+  "description": "Network (TCP 9100) transport for printer packages",
+  "license": "MIT",
+  "homepage": "https://github.com/your-org/node-printer#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/node-printer.git",
+    "directory": "packages/printer-network"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/node-printer/issues"
+  },
+  "keywords": [
+    "escpos",
+    "receipt",
+    "printer",
+    "tcp",
+    "raw-9100"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --clean --sourcemap && tsc -p tsconfig.json --emitDeclarationOnly",
+    "lint": "eslint src test --max-warnings=0",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@node-printer/printer-core": "workspace:*"
+  }
+}

@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - 22.x
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - macos-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  prebuild-winspool:
+    name: Winspool prebuild ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x64
+          - ia32
+          - arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package
+        run: pnpm --filter @node-printer/printer-winspool build
+
+      - name: Build prebuild (${{ matrix.arch }})
+        run: pnpm --filter @node-printer/printer-winspool prebuild:${{ matrix.arch }}
+
+      - name: Check prebuild output
+        shell: pwsh
+        run: |
+          $path = "packages/printer-winspool/prebuilds/win32-${{ matrix.arch }}"
+          $files = Get-ChildItem $path -Filter "*.node" -File
+
+          if ($files.Count -eq 0) {
+            throw "Missing $path/*.node"
+          }
+
+      - name: Upload prebuild artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: winspool-prebuild-win32-${{ matrix.arch }}
+          path: packages/printer-winspool/prebuilds/win32-${{ matrix.arch }}/*.node
+          if-no-files-found: error
+
+  pack-winspool:
+    name: Winspool package contents
+    runs-on: windows-latest
+    needs: prebuild-winspool
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build package
+        run: pnpm --filter @node-printer/printer-winspool build
+
+      - name: Download x64 prebuild
+        uses: actions/download-artifact@v4
+        with:
+          name: winspool-prebuild-win32-x64
+          path: packages/printer-winspool/prebuilds/win32-x64
+
+      - name: Download ia32 prebuild
+        uses: actions/download-artifact@v4
+        with:
+          name: winspool-prebuild-win32-ia32
+          path: packages/printer-winspool/prebuilds/win32-ia32
+
+      - name: Download arm64 prebuild
+        uses: actions/download-artifact@v4
+        with:
+          name: winspool-prebuild-win32-arm64
+          path: packages/printer-winspool/prebuilds/win32-arm64
+
+      - name: Check package contents
+        run: pnpm --filter @node-printer/printer-winspool pack:check

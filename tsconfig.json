@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@node-printer/printer": ["./packages/printer/src/index.ts"],
+      "@node-printer/printer-core": ["./packages/printer-core/src/index.ts"],
+      "@node-printer/printer-cups": ["./packages/printer-cups/src/index.ts"],
+      "@node-printer/printer-network": ["./packages/printer-network/src/index.ts"],
+      "@node-printer/printer-serial": ["./packages/printer-serial/src/index.ts"],
+      "@node-printer/printer-winspool": ["./packages/printer-winspool/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src/**/*.ts", "packages/*/test/**/*.ts"]
+}

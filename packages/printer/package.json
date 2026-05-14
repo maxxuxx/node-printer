@@ -1,0 +1,60 @@
+{
+  "name": "@node-printer/printer",
+  "version": "0.1.0",
+  "description": "Unified entry point for ESC/POS receipt printer transports (serial, network, CUPS, Windows Spooler)",
+  "license": "MIT",
+  "homepage": "https://github.com/your-org/node-printer#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/node-printer.git",
+    "directory": "packages/printer"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/node-printer/issues"
+  },
+  "keywords": [
+    "escpos",
+    "receipt",
+    "printer",
+    "thermal-printer",
+    "pos",
+    "winspool",
+    "cups",
+    "serialport",
+    "tcp"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --clean --sourcemap && tsc -p tsconfig.json --emitDeclarationOnly",
+    "lint": "eslint src test --max-warnings=0",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@node-printer/printer-core": "workspace:*",
+    "@node-printer/printer-cups": "workspace:*",
+    "@node-printer/printer-network": "workspace:*",
+    "@node-printer/printer-serial": "workspace:*",
+    "@node-printer/printer-winspool": "workspace:*"
+  }
+}
