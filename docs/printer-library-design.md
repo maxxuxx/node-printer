@@ -18,10 +18,10 @@ Windows와 macOS에서 POS 영수증 프린터를 안정적으로 지원하는 T
 
 | Target                     | Package                          | Runtime               | Install-time native build |
 | -------------------------- | -------------------------------- | --------------------- | ------------------------- |
-| Network printer            | `@node-printer/printer-network`  | `node:net`            | 없음                      |
-| Serial printer             | `@node-printer/printer-serial`   | `serialport`          | 일반적으로 없음           |
-| Windows system printer     | `@node-printer/printer-winspool` | Windows Spooler API   | 있음                      |
-| macOS/Linux system printer | `@node-printer/printer-cups`     | `lpstat`, `lp`, `lpr` | 초기 버전 없음            |
+| Network printer            | `@maxxuxx/node-printer-network`  | `node:net`            | 없음                      |
+| Serial printer             | `@maxxuxx/node-printer-serial`   | `serialport`          | 일반적으로 없음           |
+| Windows system printer     | `@maxxuxx/node-printer-winspool` | Windows Spooler API   | 있음                      |
+| macOS/Linux system printer | `@maxxuxx/node-printer-cups`     | `lpstat`, `lp`, `lpr` | 초기 버전 없음            |
 
 ## 2.1 Platform and Architecture Targets
 
@@ -53,22 +53,22 @@ packages/
   printer-electron/
 ```
 
-최종 사용자는 대부분 `@node-printer/printer`만 설치해서 사용할 수 있어야 한다. 다만 native dependency를 피하고 싶은 사용자를 위해 개별 transport package도 독립적으로 사용할 수 있게 한다.
+최종 사용자는 대부분 `@maxxuxx/node-printer`만 설치해서 사용할 수 있어야 한다. 다만 native dependency를 피하고 싶은 사용자를 위해 개별 transport package도 독립적으로 사용할 수 있게 한다.
 
 ## 4. Dependency Direction
 
 패키지 의존성은 한 방향으로만 흐르게 한다.
 
 ```text
-@node-printer/printer-core
+@maxxuxx/node-printer-core
   ↑
-  ├─ @node-printer/printer-network
-  ├─ @node-printer/printer-serial
-  ├─ @node-printer/printer-winspool
-  ├─ @node-printer/printer-cups
-  └─ @node-printer/printer-electron
+  ├─ @maxxuxx/node-printer-network
+  ├─ @maxxuxx/node-printer-serial
+  ├─ @maxxuxx/node-printer-winspool
+  ├─ @maxxuxx/node-printer-cups
+  └─ @maxxuxx/node-printer-electron
 
-@node-printer/printer
+@maxxuxx/node-printer
   ├─ core
   ├─ network
   ├─ serial
@@ -80,7 +80,7 @@ packages/
 
 ## 5. Package Responsibilities
 
-### 5.1 `@node-printer/printer-core`
+### 5.1 `@maxxuxx/node-printer-core`
 
 순수 TypeScript 패키지다.
 
@@ -101,7 +101,7 @@ packages/
 - native dependency
 - `node:net`, `child_process`, `serialport` 같은 transport runtime dependency
 
-### 5.2 `@node-printer/printer-network`
+### 5.2 `@maxxuxx/node-printer-network`
 
 순수 TypeScript 패키지다.
 
@@ -121,7 +121,7 @@ packages/
 - timeout과 retry
 - chunk size 옵션
 
-### 5.3 `@node-printer/printer-serial`
+### 5.3 `@maxxuxx/node-printer-serial`
 
 `serialport` 기반 패키지다.
 
@@ -135,12 +135,12 @@ packages/
 
 주의사항:
 
-- `@node-printer/printer-serial` 자체에는 custom native build를 두지 않는다.
+- `@maxxuxx/node-printer-serial` 자체에는 custom native build를 두지 않는다.
 - `serialport`는 내부적으로 native binding을 사용하지만, 지원되는 Node.js/Electron/platform 조합에서는 prebuilt binary를 사용하므로 일반적으로 MSBuild가 필요 없다.
 - 지원되지 않는 runtime, architecture, libc 조합이거나 prebuilt binary resolution에 실패하면 `node-gyp` fallback build가 발생할 수 있다.
 - Electron 환경에서는 `serialport` v10+의 N-API 기반 prebuild를 전제로 하되, packaging 시 native binary 포함 여부와 fallback rebuild 정책을 문서화해야 한다.
 
-### 5.4 `@node-printer/printer-winspool`
+### 5.4 `@maxxuxx/node-printer-winspool`
 
 Windows 전용 optional native 패키지다.
 
@@ -157,7 +157,7 @@ Windows 전용 optional native 패키지다.
 구현 전략:
 
 - N-API 기반 addon으로 구현해서 Node/Electron ABI 부담을 줄인다.
-- `@node-printer/printer`에서는 optional dependency로 둔다.
+- `@maxxuxx/node-printer`에서는 optional dependency로 둔다.
 - Windows가 아닌 플랫폼에서 import 실패가 전체 설치 실패로 이어지지 않게 한다.
 - npm 배포본은 prebuild artifact만 포함하고, 직접 빌드는 저장소에서 prebuild를 만들 때만 사용한다.
 
@@ -171,7 +171,7 @@ export interface WinspoolBinding {
 }
 ```
 
-### 5.5 `@node-printer/printer-cups`
+### 5.5 `@maxxuxx/node-printer-cups`
 
 macOS/Linux system printer 패키지다.
 
@@ -189,7 +189,7 @@ macOS/Linux system printer 패키지다.
 - `lp -d <printer> -o raw` 또는 플랫폼에 맞는 raw option을 우선 사용한다.
 - CUPS native binding은 printer status, advanced options, performance 이슈가 명확해진 뒤 검토한다.
 
-### 5.6 `@node-printer/printer-electron`
+### 5.6 `@maxxuxx/node-printer-electron`
 
 Electron 앱에서 쓰기 쉬운 wrapper 패키지다.
 
@@ -213,7 +213,7 @@ Electron 앱에서 쓰기 쉬운 wrapper 패키지다.
 최상위 패키지의 기본 사용 예시는 다음과 같다.
 
 ```ts
-import { createPrinter, createReceipt } from "@node-printer/printer";
+import { createPrinter, createReceipt } from "@maxxuxx/node-printer";
 
 const receipt = createReceipt().text("매장명").divider().text("아메리카노 4,000").cut().encode();
 
@@ -396,7 +396,7 @@ export type PrinterErrorCode =
 
 ## 11. Create Printer Factory
 
-`@node-printer/printer`는 target type에 따라 적절한 transport를 lazy-load한다.
+`@maxxuxx/node-printer`는 target type에 따라 적절한 transport를 lazy-load한다.
 
 ```ts
 export async function createPrinter(target: PrinterTarget): Promise<Printer> {
@@ -650,18 +650,18 @@ Electron smoke test:
 
 현재 구현 우선순위 기준의 MVP는 다음 범위다.
 
-- `@node-printer/printer-core`
+- `@maxxuxx/node-printer-core`
   - 공통 타입
   - error model
   - receipt builder MVP
   - ESC/POS 기본 command
-- `@node-printer/printer-serial`
+- `@maxxuxx/node-printer-serial`
   - serialport 기반 출력
   - serial port list API
   - serial option validation
   - timeout
   - open/write/drain/close lifecycle
-- `@node-printer/printer`
+- `@maxxuxx/node-printer`
   - `createReceipt`
   - `createPrinter`
   - serial target 지원

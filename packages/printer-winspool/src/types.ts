@@ -1,4 +1,4 @@
-import type { PrintResult, WinspoolPrinterTarget } from "@node-printer/printer-core";
+import type { PrintResult, WinspoolPrinterTarget } from "@maxxuxx/node-printer-core";
 
 export interface WinspoolPrinterInfo {
   name       : string;

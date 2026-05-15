@@ -1,4 +1,4 @@
-import { PrinterError, type PrintResult, type SerialPrinterTarget } from "@node-printer/printer-core";
+import { PrinterError, type PrintResult, type SerialPrinterTarget } from "@maxxuxx/node-printer-core";
 
 import type {
   SerialOpenOptions,
@@ -19,7 +19,7 @@ type NormalizedSerialPrinterTarget = Required<SerialPrinterTarget>;
 // serialport native 모듈은 import 시점이 아니라 첫 사용 시점에만 동적 로드합니다
 let cachedSerialPortConstructor: SerialPortConstructor | undefined;
 
-// 비-Windows 환경에서도 @node-printer/printer를 import할 때 serialport native가 끌려오지 않도록 함
+// 비-Windows 환경에서도 @maxxuxx/node-printer를 import할 때 serialport native가 끌려오지 않도록 함
 async function loadDefaultSerialPort(): Promise<SerialPortConstructor> {
   if (cachedSerialPortConstructor) {
     return cachedSerialPortConstructor;

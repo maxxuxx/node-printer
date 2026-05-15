@@ -3,7 +3,7 @@ import net from "node:net";
 
 import { describe, expect, it } from "vitest";
 
-import { PrinterError } from "@node-printer/printer-core";
+import { PrinterError } from "@maxxuxx/node-printer-core";
 
 import { createNetworkPrinter } from "../src/index.js";
 import type { NetworkSocket } from "../src/types.js";

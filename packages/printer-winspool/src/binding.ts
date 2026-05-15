@@ -3,7 +3,7 @@ import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { PrinterError } from "@node-printer/printer-core";
+import { PrinterError } from "@maxxuxx/node-printer-core";
 
 import type { WinspoolBinding } from "./types.js";
 

@@ -7,11 +7,11 @@ import {
   type PrintResult,
   type SerialPrinterTarget,
   type WinspoolPrinterTarget
-} from "@node-printer/printer-core";
-import type { CupsPrinterDependencies } from "@node-printer/printer-cups";
-import type { NetworkPrinterDependencies } from "@node-printer/printer-network";
-import type { SerialPrinterDependencies } from "@node-printer/printer-serial";
-import type { WinspoolBinding } from "@node-printer/printer-winspool";
+} from "@maxxuxx/node-printer-core";
+import type { CupsPrinterDependencies } from "@maxxuxx/node-printer-cups";
+import type { NetworkPrinterDependencies } from "@maxxuxx/node-printer-network";
+import type { SerialPrinterDependencies } from "@maxxuxx/node-printer-serial";
+import type { WinspoolBinding } from "@maxxuxx/node-printer-winspool";
 
 // 생성 옵션
 export interface CreatePrinterOptions {
@@ -70,21 +70,21 @@ export function createPrinter(
   switch (targetType) {
     case "serial":
       return new LazyPrinter(target, async () => {
-        const { createSerialPrinter } = await import("@node-printer/printer-serial");
+        const { createSerialPrinter } = await import("@maxxuxx/node-printer-serial");
 
         return createSerialPrinter(target as SerialPrinterTarget, options.serial);
       });
 
     case "network":
       return new LazyPrinter(target, async () => {
-        const { createNetworkPrinter } = await import("@node-printer/printer-network");
+        const { createNetworkPrinter } = await import("@maxxuxx/node-printer-network");
 
         return createNetworkPrinter(target as NetworkPrinterTarget, options.network);
       });
 
     case "cups":
       return new LazyPrinter(target, async () => {
-        const { createCupsPrinter } = await import("@node-printer/printer-cups");
+        const { createCupsPrinter } = await import("@maxxuxx/node-printer-cups");
 
         return createCupsPrinter(target as CupsPrinterTarget, options.cups);
       });
@@ -99,7 +99,7 @@ export function createPrinter(
       }
 
       return new LazyPrinter(target, async () => {
-        const { createWinspoolPrinter } = await import("@node-printer/printer-winspool");
+        const { createWinspoolPrinter } = await import("@maxxuxx/node-printer-winspool");
 
         return createWinspoolPrinter(target as WinspoolPrinterTarget, options.winspool);
       });

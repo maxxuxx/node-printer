@@ -1,6 +1,6 @@
 import net from "node:net";
 
-import { PrinterError, type NetworkPrinterTarget, type PrintResult } from "@node-printer/printer-core";
+import { PrinterError, type NetworkPrinterTarget, type PrintResult } from "@maxxuxx/node-printer-core";
 
 import type {
   NetworkPrinterDependencies,

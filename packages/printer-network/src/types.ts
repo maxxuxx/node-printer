@@ -1,4 +1,4 @@
-import type { NetworkPrinterTarget, RetryOptions } from "@node-printer/printer-core";
+import type { NetworkPrinterTarget, RetryOptions } from "@maxxuxx/node-printer-core";
 
 export type NormalizedRetryOptions = Required<RetryOptions>;
 

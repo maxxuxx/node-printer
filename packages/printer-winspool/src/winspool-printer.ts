@@ -1,4 +1,4 @@
-import { PrinterError, type PrintResult, type WinspoolPrinterTarget } from "@node-printer/printer-core";
+import { PrinterError, type PrintResult, type WinspoolPrinterTarget } from "@maxxuxx/node-printer-core";
 
 import { assertWindows, loadWinspoolBinding } from "./binding.js";
 import type {

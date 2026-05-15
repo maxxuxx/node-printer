@@ -82,6 +82,9 @@
   - 사용자가 저장소를 내려받아 `prebuild:all`을 실행하는 흐름 안내
   - Python과 Visual Studio Build Tools 사전 설치 링크와 winget/setup.exe 설치 명령 추가
   - prebuild 누락 상태에서 `pack:check`가 실패하는 것 확인
+  - npm package scope를 `@maxxuxx/node-printer*` 이름 체계로 변경
+  - package metadata의 GitHub URL을 `maxxuxx/node-printer`로 변경
+  - pnpm workspace lockfile과 import 경로를 새 package 이름으로 정리
 - winspool native build 검증
   - prebuilds 디렉터리 제거 후 source build 성공 확인
   - `build/Release/winspool.node` 생성 확인
@@ -105,12 +108,14 @@ winspool 빌드/배포 정리
 - GitHub Actions package contents job의 `Build package`가 의존 패키지까지 빌드하도록 수정
 - GitHub Actions package contents job 재실행 후 artifact 다운로드와 `pack:check` 통과 확인
 - Windows에서 `prebuild:all` 실제 실행 확인
-- 실제 prebuild artifact 확보 후 `pnpm --filter @node-printer/printer-winspool pack:check` 통과 확인
+- 실제 prebuild artifact 확보 후 `pnpm --filter @maxxuxx/node-printer-winspool pack:check` 통과 확인
 - npm publish 전 `prebuilds/win32-{arch}/*.node` 포함 확인
+- npm publish는 core, network, serial, cups, winspool, main 순서로 진행
+- `@maxxuxx/node-printer` tarball dependency가 `workspace:*` 대신 `0.1.0`으로 변환되는지 확인 완료
 
 Electron wrapper 패키지
 
-- @node-printer/printer-electron
+- @maxxuxx/node-printer-electron
 - main process API
 - preload/IPC 샘플
 - packaged app에서 asarUnpack native load 검증

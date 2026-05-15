@@ -1,6 +1,6 @@
 # Local UI Test Review
 
-현재 단계에서는 `@node-printer/printer`, `@node-printer/printer-core`, `@node-printer/printer-serial` 패키지 구현을 더 건드리지 않고 별도 테스트 앱을 두는 방식이 가장 안전하다
+현재 단계에서는 `@maxxuxx/node-printer`, `@maxxuxx/node-printer-core`, `@maxxuxx/node-printer-serial` 패키지 구현을 더 건드리지 않고 별도 테스트 앱을 두는 방식이 가장 안전하다
 
 ## 결론
 
@@ -22,7 +22,7 @@ examples/
 import { createPrinter, createReceipt, listSerialPorts } from "../../packages/printer/dist/index.js"
 ```
 
-이렇게 하면 실제 외부 프로젝트가 `@node-printer/printer`를 가져다 쓰는 방식과 거의 같고, printer 패키지 내부 코드는 수정하지 않아도 된다
+이렇게 하면 실제 외부 프로젝트가 `@maxxuxx/node-printer`를 가져다 쓰는 방식과 거의 같고, printer 패키지 내부 코드는 수정하지 않아도 된다
 
 ## 왜 Web Serial API만 쓰면 안 되는가
 
@@ -30,7 +30,7 @@ import { createPrinter, createReceipt, listSerialPorts } from "../../packages/pr
 
 우리가 확인해야 하는 것은 다음이다
 
-- `@node-printer/printer`의 public API
+- `@maxxuxx/node-printer`의 public API
 - `createReceipt`로 생성한 ESC/POS bytes
 - `createPrinter({ type: "serial" })`
 - `serialport` 기반 open/write/drain/close 흐름
@@ -82,7 +82,7 @@ POST /api/print
 
 필요한 조건은 이미 갖춰져 있다
 
-- `@node-printer/printer` top-level entry
+- `@maxxuxx/node-printer` top-level entry
 - `createReceipt`
 - `createPrinter`
 - `listSerialPorts`

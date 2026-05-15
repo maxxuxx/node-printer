@@ -1,16 +1,16 @@
 {
-  "name": "@node-printer/printer-core",
+  "name": "@maxxuxx/node-printer-core",
   "version": "0.1.0",
   "description": "Core types, errors, and ESC/POS receipt builder for printer packages",
   "license": "MIT",
-  "homepage": "https://github.com/your-org/node-printer#readme",
+  "homepage": "https://github.com/maxxuxx/node-printer#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/node-printer.git",
+    "url": "https://github.com/maxxuxx/node-printer.git",
     "directory": "packages/printer-core"
   },
   "bugs": {
-    "url": "https://github.com/your-org/node-printer/issues"
+    "url": "https://github.com/maxxuxx/node-printer/issues"
   },
   "keywords": [
     "escpos",

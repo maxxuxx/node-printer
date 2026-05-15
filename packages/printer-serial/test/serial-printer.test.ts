@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { PrinterError } from "@node-printer/printer-core";
+import { PrinterError } from "@maxxuxx/node-printer-core";
 
 import { createSerialPrinter, listSerialPorts } from "../src/index.js";
 import type { SerialOpenOptions, SerialPortConnection } from "../src/types.js";

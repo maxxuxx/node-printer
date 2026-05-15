@@ -1,4 +1,4 @@
-import type { SerialPrinterTarget } from "@node-printer/printer-core";
+import type { SerialPrinterTarget } from "@maxxuxx/node-printer-core";
 
 export interface SerialPortInfo {
   path         : string;

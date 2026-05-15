@@ -1,20 +1,20 @@
-export * from "@node-printer/printer-core";
+export * from "@maxxuxx/node-printer-core";
 export {
   createCupsPrinter,
   listCupsPrinters,
   parseLpstatPrinters,
   printRaw as printCupsRaw
-} from "@node-printer/printer-cups";
+} from "@maxxuxx/node-printer-cups";
 export {
   createNetworkPrinter
-} from "@node-printer/printer-network";
-export { createSerialPrinter, listSerialPorts } from "@node-printer/printer-serial";
+} from "@maxxuxx/node-printer-network";
+export { createSerialPrinter, listSerialPorts } from "@maxxuxx/node-printer-serial";
 export {
   createWinspoolPrinter,
   getDefaultWinspoolPrinter,
   listWinspoolPrinters,
   printRaw as printWinspoolRaw
-} from "@node-printer/printer-winspool";
+} from "@maxxuxx/node-printer-winspool";
 export type {
   CupsCommandRequest,
   CupsCommandResult,
@@ -23,27 +23,27 @@ export type {
   CupsPrinterDependencies,
   CupsPrinterInfo,
   CupsPrinterState
-} from "@node-printer/printer-cups";
+} from "@maxxuxx/node-printer-cups";
 export type {
   NetworkConnectionOptions,
   NetworkPrinterDependencies,
   NetworkSocket,
   NormalizedNetworkPrinterTarget,
   NormalizedRetryOptions
-} from "@node-printer/printer-network";
+} from "@maxxuxx/node-printer-network";
 export type {
   SerialOpenOptions,
   SerialPortConnection,
   SerialPortConstructor,
   SerialPortInfo,
   SerialPrinterDependencies
-} from "@node-printer/printer-serial";
+} from "@maxxuxx/node-printer-serial";
 export type {
   WinspoolBinding,
   WinspoolNativePrinterInfo,
   WinspoolPrintRawOptions,
   WinspoolPrinter,
   WinspoolPrinterInfo
-} from "@node-printer/printer-winspool";
+} from "@maxxuxx/node-printer-winspool";
 
 export * from "./create-printer.js";

@@ -11,7 +11,7 @@
     "build:packages": "corepack pnpm -r --if-present build",
     "build:test-server": "vite build --config examples/printer-test-server/vite.config.mjs",
     "lint": "corepack pnpm -r --if-present lint",
-    "release:check": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build && corepack pnpm --filter @node-printer/printer-winspool pack:check",
+    "release:check": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build && corepack pnpm --filter @maxxuxx/node-printer-winspool pack:check",
     "test": "corepack pnpm -r --if-present test",
     "test-server": "node examples/printer-test-server/server.mjs",
     "typecheck": "tsc -p tsconfig.json",

@@ -1,16 +1,16 @@
 {
-  "name": "@node-printer/printer-serial",
+  "name": "@maxxuxx/node-printer-serial",
   "version": "0.1.0",
   "description": "Serial (COM/tty) transport for printer packages",
   "license": "MIT",
-  "homepage": "https://github.com/your-org/node-printer#readme",
+  "homepage": "https://github.com/maxxuxx/node-printer#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/node-printer.git",
+    "url": "https://github.com/maxxuxx/node-printer.git",
     "directory": "packages/printer-serial"
   },
   "bugs": {
-    "url": "https://github.com/your-org/node-printer/issues"
+    "url": "https://github.com/maxxuxx/node-printer/issues"
   },
   "keywords": [
     "escpos",
@@ -48,7 +48,7 @@
     "test": "vitest run --config ../../vitest.config.ts"
   },
   "dependencies": {
-    "@node-printer/printer-core": "workspace:*",
+    "@maxxuxx/node-printer-core": "workspace:*",
     "serialport": "^13.0.0"
   },
   "devDependencies": {

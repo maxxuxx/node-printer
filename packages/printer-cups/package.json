@@ -1,16 +1,16 @@
 {
-  "name": "@node-printer/printer-cups",
+  "name": "@maxxuxx/node-printer-cups",
   "version": "0.1.0",
   "description": "CUPS (lp/lpr) transport for printer packages on macOS and Linux",
   "license": "MIT",
-  "homepage": "https://github.com/your-org/node-printer#readme",
+  "homepage": "https://github.com/maxxuxx/node-printer#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/node-printer.git",
+    "url": "https://github.com/maxxuxx/node-printer.git",
     "directory": "packages/printer-cups"
   },
   "bugs": {
-    "url": "https://github.com/your-org/node-printer/issues"
+    "url": "https://github.com/maxxuxx/node-printer/issues"
   },
   "keywords": [
     "escpos",
@@ -48,6 +48,6 @@
     "test": "vitest run --config ../../vitest.config.ts"
   },
   "dependencies": {
-    "@node-printer/printer-core": "workspace:*"
+    "@maxxuxx/node-printer-core": "workspace:*"
   }
 }

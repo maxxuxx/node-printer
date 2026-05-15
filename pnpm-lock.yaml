@@ -44,19 +44,19 @@ importers:
 
   packages/printer:
     dependencies:
-      '@node-printer/printer-core':
+      '@maxxuxx/node-printer-core':
         specifier: workspace:*
         version: link:../printer-core
-      '@node-printer/printer-cups':
+      '@maxxuxx/node-printer-cups':
         specifier: workspace:*
         version: link:../printer-cups
-      '@node-printer/printer-network':
+      '@maxxuxx/node-printer-network':
         specifier: workspace:*
         version: link:../printer-network
-      '@node-printer/printer-serial':
+      '@maxxuxx/node-printer-serial':
         specifier: workspace:*
         version: link:../printer-serial
-      '@node-printer/printer-winspool':
+      '@maxxuxx/node-printer-winspool':
         specifier: workspace:*
         version: link:../printer-winspool
 
@@ -71,19 +71,19 @@ importers:
 
   packages/printer-cups:
     dependencies:
-      '@node-printer/printer-core':
+      '@maxxuxx/node-printer-core':
         specifier: workspace:*
         version: link:../printer-core
 
   packages/printer-network:
     dependencies:
-      '@node-printer/printer-core':
+      '@maxxuxx/node-printer-core':
         specifier: workspace:*
         version: link:../printer-core
 
   packages/printer-serial:
     dependencies:
-      '@node-printer/printer-core':
+      '@maxxuxx/node-printer-core':
         specifier: workspace:*
         version: link:../printer-core
       serialport:
@@ -96,7 +96,7 @@ importers:
 
   packages/printer-winspool:
     dependencies:
-      '@node-printer/printer-core':
+      '@maxxuxx/node-printer-core':
         specifier: workspace:*
         version: link:../printer-core
     devDependencies:

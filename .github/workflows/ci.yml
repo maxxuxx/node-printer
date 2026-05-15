@@ -75,10 +75,10 @@ jobs:
         run: corepack pnpm install --frozen-lockfile
 
       - name: Build package
-        run: corepack pnpm --filter @node-printer/printer-winspool... build
+        run: corepack pnpm --filter @maxxuxx/node-printer-winspool... build
 
       - name: Build prebuild (${{ matrix.arch }})
-        run: corepack pnpm --filter @node-printer/printer-winspool prebuild:${{ matrix.arch }}
+        run: corepack pnpm --filter @maxxuxx/node-printer-winspool prebuild:${{ matrix.arch }}
 
       - name: Check prebuild output
         shell: pwsh
@@ -118,7 +118,7 @@ jobs:
         run: corepack pnpm install --frozen-lockfile
 
       - name: Build package
-        run: corepack pnpm --filter @node-printer/printer-winspool... build
+        run: corepack pnpm --filter @maxxuxx/node-printer-winspool... build
 
       - name: Download x64 prebuild
         uses: actions/download-artifact@v4
@@ -139,4 +139,4 @@ jobs:
           path: packages/printer-winspool/prebuilds/win32-arm64
 
       - name: Check package contents
-        run: corepack pnpm --filter @node-printer/printer-winspool pack:check
+        run: corepack pnpm --filter @maxxuxx/node-printer-winspool pack:check

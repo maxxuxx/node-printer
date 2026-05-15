@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 
-import { PrinterError, type CupsPrinterTarget, type PrintResult } from "@node-printer/printer-core";
+import { PrinterError, type CupsPrinterTarget, type PrintResult } from "@maxxuxx/node-printer-core";
 
 import type {
   CupsCommandRequest,

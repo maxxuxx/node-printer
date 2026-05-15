@@ -8,14 +8,14 @@ Node.js와 Electron에서 시리얼, 네트워크(TCP 9100), CUPS, Windows Spool
 
 | 패키지                           | 용도                                                        |
 | -------------------------------- | ----------------------------------------------------------- |
-| `@node-printer/printer`          | 통합 entry point. `createPrinter`로 transport를 동적 로딩   |
-| `@node-printer/printer-core`     | 공통 타입, 에러 모델, ESC/POS receipt builder, CP949 인코딩 |
-| `@node-printer/printer-serial`   | `serialport` 기반 COM/tty 출력 (native는 lazy load)         |
-| `@node-printer/printer-network`  | TCP 9100, timeout, retry, chunked write, backpressure       |
-| `@node-printer/printer-cups`     | macOS와 Linux의 `lp`/`lpr`/`lpstat` 기반 RAW 출력           |
-| `@node-printer/printer-winspool` | Windows Spooler RAW 출력 N-API 바인딩 (prebuild only)       |
+| `@maxxuxx/node-printer`          | 통합 entry point. `createPrinter`로 transport를 동적 로딩   |
+| `@maxxuxx/node-printer-core`     | 공통 타입, 에러 모델, ESC/POS receipt builder, CP949 인코딩 |
+| `@maxxuxx/node-printer-serial`   | `serialport` 기반 COM/tty 출력 (native는 lazy load)         |
+| `@maxxuxx/node-printer-network`  | TCP 9100, timeout, retry, chunked write, backpressure       |
+| `@maxxuxx/node-printer-cups`     | macOS와 Linux의 `lp`/`lpr`/`lpstat` 기반 RAW 출력           |
+| `@maxxuxx/node-printer-winspool` | Windows Spooler RAW 출력 N-API 바인딩 (prebuild only)       |
 
-> 패키지 scope `@node-printer/`는 임시값입니다. 실제 npm publish 전에 사용자가 소유한 npm scope로 일괄 치환하세요
+> npm 배포 scope는 `@maxxuxx/`를 기준으로 합니다
 
 ## 플랫폼 지원
 
@@ -30,14 +30,14 @@ Node.js와 Electron에서 시리얼, 네트워크(TCP 9100), CUPS, Windows Spool
 
 `core`, `network`, `cups`는 native addon 없이 동작합니다. `serial`은 `serialport` prebuild를 lazy load하므로 일반적으로 MSBuild가 필요 없습니다. `winspool`은 Windows 전용 N-API 바인딩으로 격리하고 `ia32`, `x64`, `arm64` prebuild만 사용합니다
 
-`@node-printer/printer` 통합 패키지는 transport 모듈을 **동적 import**로 로딩합니다. 즉 macOS에서 `import { createPrinter } from "@node-printer/printer"`만 해도 winspool native나 serialport native를 미리 끌어오지 않습니다
+`@maxxuxx/node-printer` 통합 패키지는 transport 모듈을 **동적 import**로 로딩합니다. 즉 macOS에서 `import { createPrinter } from "@maxxuxx/node-printer"`만 해도 winspool native나 serialport native를 미리 끌어오지 않습니다
 
 ## 외부 프로젝트에서 설치
 
 ```bash
-npm install @node-printer/printer
+npm install @maxxuxx/node-printer
 # 또는
-pnpm add @node-printer/printer
+pnpm add @maxxuxx/node-printer
 ```
 
 비-Windows 환경에서는 winspool native 빌드를 시도하지 않으므로 설치가 실패하지 않습니다. Windows에서는 패키지에 포함된 prebuild만 로드하며, prebuild가 없으면 `ERR_NATIVE_MODULE_UNAVAILABLE` 오류로 중단합니다
@@ -45,7 +45,7 @@ pnpm add @node-printer/printer
 ## 기본 사용 예
 
 ```ts
-import { createPrinter, createReceipt } from "@node-printer/printer";
+import { createPrinter, createReceipt } from "@maxxuxx/node-printer";
 
 const receipt = createReceipt({ encoding: "cp949" })
   .initialize()
@@ -156,10 +156,10 @@ $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.e
 
 ```powershell
 npm exec --yes --package pnpm@11.1.1 -- pnpm install
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool build
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool prebuild:x64
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool prebuild:ia32
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool prebuild:arm64
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool build
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool prebuild:x64
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool prebuild:ia32
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool prebuild:arm64
 ```
 
 root에서 `pnpm install`을 먼저 실행한 뒤에는 `packages/printer-winspool` 폴더에서 `npm run build`와 `npm run prebuild:x64`도 사용할 수 있습니다
@@ -172,14 +172,14 @@ Build Tools와 Community가 모두 조건을 만족하면 Build Tools를 먼저 
 한 번에 생성하려면 다음 명령을 사용합니다
 
 ```powershell
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool prebuild:all
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool prebuild:all
 ```
 
 이 저장소는 npm 설치 중 source build fallback을 실행하지 않습니다. prebuild를 만들려면 저장소를 받은 뒤 위 명령을 직접 실행합니다
 
 ### Prebuild 구조
 
-`@node-printer/printer-winspool`은 npm 패키지 안에 Windows prebuild를 포함합니다
+`@maxxuxx/node-printer-winspool`은 npm 패키지 안에 Windows prebuild를 포함합니다
 
 ```text
 packages/printer-winspool/prebuilds/
@@ -194,9 +194,9 @@ packages/printer-winspool/prebuilds/
 CI에서 자동으로 세 아키텍처 모두 생성되어 artifact로 업로드됩니다. publish 전에 다음으로 직접 만들 수도 있습니다
 
 ```powershell
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool prebuild:x64
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool prebuild:ia32
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool prebuild:arm64
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool prebuild:x64
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool prebuild:ia32
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool prebuild:arm64
 ```
 
 prebuild target은 패키지 최소 지원 버전인 Node 20.0.0으로 고정합니다. `prebuildify --napi` 기본값은 최신 Node target을 선택할 수 있고, 최신 Node가 Windows ia32 `node.lib`를 제공하지 않으면 prebuild 생성이 실패할 수 있습니다
@@ -209,8 +209,8 @@ prebuild target은 패키지 최소 지원 버전인 Node 20.0.0으로 고정합
 배포 전 package 포함 파일은 다음 명령으로 확인합니다
 
 ```powershell
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool prebuild:check
-npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-winspool pack:check
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool prebuild:check
+npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @maxxuxx/node-printer-winspool pack:check
 ```
 
 `prebuilds/**/*.node`는 포함하고 `build/`, `*.pdb`, `*.iobj`, `*.ipdb`는 포함하지 않습니다
@@ -219,7 +219,7 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm --filter @node-printer/printer-wins
 
 배포 전에는 최소한 다음을 확인합니다
 
-1. `@node-printer/` scope를 실제 소유 scope로 교체
+1. npm 로그인 계정이 `@maxxuxx/` scope에 publish 권한을 갖는지 확인
 2. `homepage`, `repository`, `bugs`, `license`, `version` 확인
 3. Windows에서 `prebuild:all` 실행 후 `prebuild:check` 통과 확인
 4. `npm exec --yes --package pnpm@11.1.1 -- pnpm release:check` 통과 확인
@@ -234,7 +234,7 @@ Electron 앱에서는 winspool을 main process에서만 import하고, packaged a
 
 ```json
 {
-  "asarUnpack": ["**/node_modules/@node-printer/printer-winspool/prebuilds/**/*.node"]
+  "asarUnpack": ["**/node_modules/@maxxuxx/node-printer-winspool/prebuilds/**/*.node"]
 }
 ```
 
