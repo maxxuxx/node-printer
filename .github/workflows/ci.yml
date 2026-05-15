@@ -51,7 +51,7 @@ jobs:
 
   prebuild-winspool:
     name: Winspool prebuild ${{ matrix.arch }}
-    runs-on: windows-latest
+    runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
@@ -101,7 +101,7 @@ jobs:
 
   pack-winspool:
     name: Winspool package contents
-    runs-on: windows-latest
+    runs-on: windows-2022
     needs: prebuild-winspool
 
     steps:
