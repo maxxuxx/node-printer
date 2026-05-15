@@ -12,6 +12,7 @@
     "build:test-server": "vite build --config examples/printer-test-server/vite.config.mjs",
     "lint": "corepack pnpm -r --if-present lint",
     "release:check": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build && corepack pnpm --filter @maxxuxx/node-printer-winspool pack:check",
+    "release:publish": "corepack pnpm --filter @maxxuxx/node-printer-core publish --access public && corepack pnpm --filter @maxxuxx/node-printer-network publish --access public && corepack pnpm --filter @maxxuxx/node-printer-serial publish --access public && corepack pnpm --filter @maxxuxx/node-printer-cups publish --access public && corepack pnpm --filter @maxxuxx/node-printer-winspool publish --access public && corepack pnpm --filter @maxxuxx/node-printer publish --access public",
     "test": "corepack pnpm -r --if-present test",
     "test-server": "node examples/printer-test-server/server.mjs",
     "typecheck": "tsc -p tsconfig.json",
