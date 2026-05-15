@@ -25,29 +25,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Lint
-        run: pnpm lint
+        run: corepack pnpm lint
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: corepack pnpm typecheck
 
       - name: Test
-        run: pnpm test
+        run: corepack pnpm test
 
       - name: Build
-        run: pnpm build
+        run: corepack pnpm build
 
   prebuild-winspool:
     name: Winspool prebuild ${{ matrix.arch }}
@@ -64,23 +63,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Build package
-        run: pnpm --filter @node-printer/printer-winspool... build
+        run: corepack pnpm --filter @node-printer/printer-winspool... build
 
       - name: Build prebuild (${{ matrix.arch }})
-        run: pnpm --filter @node-printer/printer-winspool prebuild:${{ matrix.arch }}
+        run: corepack pnpm --filter @node-printer/printer-winspool prebuild:${{ matrix.arch }}
 
       - name: Check prebuild output
         shell: pwsh
@@ -108,20 +106,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: corepack pnpm install --frozen-lockfile
 
       - name: Build package
-        run: pnpm --filter @node-printer/printer-winspool build
+        run: corepack pnpm --filter @node-printer/printer-winspool build
 
       - name: Download x64 prebuild
         uses: actions/download-artifact@v4
@@ -142,4 +139,4 @@ jobs:
           path: packages/printer-winspool/prebuilds/win32-arm64
 
       - name: Check package contents
-        run: pnpm --filter @node-printer/printer-winspool pack:check
+        run: corepack pnpm --filter @node-printer/printer-winspool pack:check
