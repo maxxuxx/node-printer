@@ -16,8 +16,6 @@ const ARCH_COMPONENTS = {
   ]
 };
 
-const COMMON_COMPONENTS = ["Microsoft.VisualStudio.Workload.VCTools"];
-
 const arch = process.argv[2];
 
 // Argument validation
@@ -34,14 +32,14 @@ if (process.platform !== "win32") {
 
 // Visual Studio discovery
 
-const requiredComponents = [...COMMON_COMPONENTS, ...ARCH_COMPONENTS[arch]];
+const requiredComponents = ARCH_COMPONENTS[arch];
 const visualStudioPath   = findVisualStudio(requiredComponents);
 
 if (!visualStudioPath) {
   const instances        = listVisualStudioInstances();
   const modifyTargetPath = chooseModifyTarget(instances);
 
-  console.error(`Visual Studio Build Tools with required components was not found for ${arch}`);
+  console.error(`Visual Studio with required C++ components was not found for ${arch}`);
   console.error("");
   console.error("Install or modify Visual Studio with these components");
   for (const component of requiredComponents) {
@@ -53,7 +51,7 @@ if (!visualStudioPath) {
     console.error(createModifyCommand(modifyTargetPath, requiredComponents));
     console.error("");
     console.error("Verify after modify");
-    console.error(`& "${getVswherePath()}" -all -products * -requires Microsoft.VisualStudio.Component.VC.Tools.ARM64 -property installationPath`);
+    console.error(createVerifyCommand(requiredComponents));
     console.error("");
   }
   console.error("Fresh Build Tools install");
@@ -168,6 +166,12 @@ function createModifyCommand(installPath, components) {
   const addArgs   = components.map((component) => `--add ${component}`).join(" ");
 
   return `& "${setupPath}" modify --installPath "${installPath}" ${addArgs} --add Microsoft.VisualStudio.Component.Windows11SDK.26100 --includeRecommended --passive --norestart`;
+}
+
+function createVerifyCommand(components) {
+  const requireArgs = components.map((component) => `-requires ${component}`).join(" ");
+
+  return `& "${getVswherePath()}" -all -products * ${requireArgs} -property installationPath`;
 }
 
 function getSetupPath() {

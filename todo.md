@@ -69,6 +69,8 @@
   - GitHub Actions package contents job을 세 아키텍처 prebuild artifact 기반으로 분리
   - GitHub Actions에서 `setup-node cache: pnpm`이 Node 20 Corepack으로 pnpm 11을 실행하지 않도록 캐시 설정 제거
   - GitHub Actions pnpm 호출을 `corepack pnpm`으로 고정
+  - GitHub Actions `setup-node` 단계 통과 후 `vswhere` 조건이 VS2022 Enterprise를 제외하는 문제 확인
+  - prebuild wrapper가 Build Tools workload ID 대신 실제 C++ tool component ID만 검사하도록 수정
   - 테스트 서버 winspool 준비 상태를 build output 기준에서 prebuild 기준으로 변경
 - scripts 파일 정리
   - 루트 `scripts/*.cjs`와 `scripts/windows/rebuild.ps1` 제거
@@ -99,8 +101,8 @@ Windows 실제 검증
 winspool 빌드/배포 정리
 
 - 관리자 PowerShell에서 Build Tools 2022 제거/재설치 또는 ARM64 컴포넌트 추가 후 `prebuild:arm64` 확인
-- GitHub Actions prebuild와 package contents job 재실행 후 `setup-node` 단계 통과 확인
-- `setup-node` 통과 후 다음 실패가 있으면 prebuild 단계 로그 기준으로 추가 확인
+- GitHub Actions prebuild와 package contents job 재실행 후 VS2022 Enterprise 선택 확인
+- `vswhere` 통과 후 다음 실패가 있으면 node-gyp/prebuildify 로그 기준으로 추가 확인
 - Windows에서 `prebuild:all` 실제 실행 확인
 - 실제 prebuild artifact 확보 후 `pnpm --filter @node-printer/printer-winspool pack:check` 통과 확인
 - npm publish 전 `prebuilds/win32-{arch}/*.node` 포함 확인
