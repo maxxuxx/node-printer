@@ -77,7 +77,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build package
-        run: pnpm --filter @node-printer/printer-winspool build
+        run: pnpm --filter @node-printer/printer-winspool... build
 
       - name: Build prebuild (${{ matrix.arch }})
         run: pnpm --filter @node-printer/printer-winspool prebuild:${{ matrix.arch }}
