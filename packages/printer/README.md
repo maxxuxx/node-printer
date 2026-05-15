@@ -1,14 +1,40 @@
 # @maxxuxx/node-printer
 
+[한국어](README.ko.md)
+
 Unified ESC/POS receipt printer API for Node.js and Electron
 
-This package provides one entry point for serial, network, CUPS, and Windows Spooler printers. Transport packages are lazy-loaded so importing the package does not immediately load platform-specific native modules
+This package provides one entry point for serial, network, CUPS, and Windows Spooler printers
+
+Transport packages are lazy-loaded so importing the package does not immediately load platform-specific native modules
+
+## Tech Stack
+
+| Area           | Stack                                  |
+| -------------- | -------------------------------------- |
+| Runtime        | Node.js 20+                            |
+| Language       | TypeScript                             |
+| Module output  | ESM and CommonJS                       |
+| Receipt output | ESC/POS bytes                          |
+| Transports     | Network, Serial, CUPS, Windows Spooler |
+| Native loading | Lazy import with bundled prebuilds     |
 
 ## Install
 
 ```bash
 npm install @maxxuxx/node-printer
 ```
+
+## What Works
+
+| Feature                    | Status       | Notes                                       |
+| -------------------------- | ------------ | ------------------------------------------- |
+| Network TCP 9100           | ✅ Available | Works on Windows, macOS, and Linux          |
+| Serial COM or tty          | ✅ Available | Uses `serialport`                           |
+| CUPS printing              | ✅ Available | Works on macOS and Linux                    |
+| Windows Spooler RAW        | ✅ Available | Works on Windows with bundled prebuilds     |
+| Winspool on macOS or Linux | ❌ Not used  | Throws `ERR_UNSUPPORTED_PLATFORM`           |
+| npm source build fallback  | ❌ Not used  | Published installs expect bundled prebuilds |
 
 ## Quick Start
 
@@ -34,7 +60,7 @@ await printer.print(receipt);
 await printer.close?.();
 ```
 
-## Transports
+## Choose a Printer
 
 ### Network
 
@@ -83,7 +109,9 @@ const printer = createPrinter({
 });
 ```
 
-Winspool is available only on Windows. The native binding is prebuild-only and does not compile during npm install
+Winspool is available only on Windows
+
+The native binding uses bundled prebuilds and does not compile during npm install
 
 ## Receipt Builder
 
@@ -107,15 +135,27 @@ const receipt = createReceipt({ width: 48, encoding: "cp949" })
 
 Supported builder commands include text, rows, alignment, bold, underline, size, feed, cut, QR, barcode, image, and raw bytes
 
-## Platform Notes
+## Platform Support
 
-| Platform | Network | Serial | CUPS | Winspool |
-| --- | --- | --- | --- | --- |
-| Windows | Supported | Supported | Not supported | Supported |
-| macOS | Supported | Supported | Supported | Not supported |
-| Linux | Supported | Supported | Supported | Not supported |
+| Platform | Network      | Serial       | CUPS         | Winspool     |
+| -------- | ------------ | ------------ | ------------ | ------------ |
+| Windows  | ✅ Supported | ✅ Supported | ❌ No        | ✅ Supported |
+| macOS    | ✅ Supported | ✅ Supported | ✅ Supported | ❌ No        |
+| Linux    | ✅ Supported | ✅ Supported | ✅ Supported | ❌ No        |
 
 Calling a winspool target on a non-Windows platform throws `ERR_UNSUPPORTED_PLATFORM`
+
+## Prebuilds
+
+Normal installs use the bundled winspool prebuild when running on Windows
+
+Direct native builds are available in the repository for maintainers and contributors who need to validate or refresh prebuild artifacts
+
+| Path                        | Status          | When to use                                 |
+| --------------------------- | --------------- | ------------------------------------------- |
+| Bundled winspool prebuild   | ✅ Recommended  | App installs and normal package usage       |
+| Direct repository build     | ✅ Available    | Native validation and prebuild refresh work |
+| Source build during install | ❌ Not provided | Keeps npm installs predictable across OSes  |
 
 ## Errors
 
@@ -135,16 +175,6 @@ try {
 
 Common error codes include `ERR_INVALID_TARGET`, `ERR_UNSUPPORTED_PLATFORM`, `ERR_CONNECTION_TIMEOUT`, `ERR_WRITE_TIMEOUT`, `ERR_NATIVE_MODULE_UNAVAILABLE`, and transport-specific failure codes
 
-## Electron
-
-Use this package from the main process. If you package an app with winspool support, unpack native prebuilds
-
-```json
-{
-  "asarUnpack": ["**/node_modules/@maxxuxx/node-printer-winspool/prebuilds/**/*.node"]
-}
-```
-
 ## Related Packages
 
 - `@maxxuxx/node-printer-core`
@@ -153,6 +183,14 @@ Use this package from the main process. If you package an app with winspool supp
 - `@maxxuxx/node-printer-cups`
 - `@maxxuxx/node-printer-winspool`
 
+## Contributors Welcome
+
+Contributions are welcome for bug fixes, docs, platform checks, and printer validation notes
+
 ## Repository
 
-https://github.com/maxxuxx/node-printer
+[https://github.com/maxxuxx/node-printer](https://github.com/maxxuxx/node-printer)
+
+## License
+
+MIT

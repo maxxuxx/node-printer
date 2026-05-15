@@ -1,90 +1,161 @@
 # Printer test server
 
-단일 localhost 서버로 현재 프린터 라이브러리 빌드 산출물을 테스트합니다
+[한국어](README.ko.md)
 
-## 실행
+Local HTTP server and browser UI for testing the current `@maxxuxx/node-printer` build against real printers
 
-먼저 패키지를 빌드합니다
+The server imports `packages/printer/dist/index.js` directly, so build the repository before using the API
+
+## Tech Stack
+
+| Area         | Stack                                  |
+| ------------ | -------------------------------------- |
+| Runtime      | Node.js 20+                            |
+| Server       | Node HTTP server                       |
+| UI           | Svelte, Vite                           |
+| Printer API  | Local `@maxxuxx/node-printer` build    |
+| Test targets | Serial, Network, CUPS, Windows Spooler |
+
+## Quick Run
+
+Prepare dependencies and build output
 
 ```powershell
+npm exec --yes --package pnpm@11.1.1 -- pnpm install
 npm exec --yes --package pnpm@11.1.1 -- pnpm build
 ```
 
-서버를 실행합니다
+Run the test server
 
 ```powershell
 npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 ```
 
-빌드와 서버 실행을 이어서 하려면 다음 명령을 사용합니다
+Open `http://localhost:3007` in a browser
 
-```powershell
-npm exec --yes --package pnpm@11.1.1 -- pnpm build
-npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
-```
+## What Works
 
-기본 주소는 `http://localhost:3007` 입니다
+| Feature                 | Status       | Notes                                  |
+| ----------------------- | ------------ | -------------------------------------- |
+| Health check            | ✅ Available | Checks build output and capabilities   |
+| Serial printer list     | ✅ Available | Uses local serial transport            |
+| Network printer presets | ✅ Available | Reads environment variable presets     |
+| CUPS printer list       | ✅ Available | Works on macOS and Linux with `lpstat` |
+| Winspool printer list   | ✅ Available | Works on Windows Node                  |
+| Winspool from WSL       | ❌ Not used  | Windows Spooler is not available there |
 
-포트 변경은 `PORT` 환경 변수를 사용합니다
+## Run Options
+
+Change the port with the `PORT` environment variable
 
 ```powershell
 $env:PORT=3010
-node examples/printer-test-server/server.mjs
+npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 ```
 
-## API
-
-```text
-GET /api/health
-GET /api/capabilities
-GET /api/serial/ports
-GET /api/network/printers
-GET /api/cups/printers
-GET /api/winspool/printers
-POST /api/receipt/encode
-POST /api/print
-```
-
-Network preset 목록은 `PRINTER_NETWORK_TARGETS` 환경 변수로 줄 수 있습니다
+Set network printer presets with `PRINTER_NETWORK_TARGETS`
 
 ```powershell
 $env:PRINTER_NETWORK_TARGETS='192.168.0.50:9100,192.168.0.51:9100'
 ```
 
-## 영수증 인코딩 예시
+Use a JSON array when names and defaults are needed
+
+```powershell
+$env:PRINTER_NETWORK_TARGETS='[{"id":"store","name":"Store receipt","host":"192.168.0.50","port":9100,"isDefault":true}]'
+```
+
+## UI Features
+
+- Server health and transport capability checks
+- Serial, Network, CUPS, and Winspool target discovery
+- Receipt lines, encoding, width, divider, feed, cut, and copies controls
+- QR, barcode, and image example data
+- Encoded hex and bytes preview
+- Print result and detailed error logs
+
+## API
+
+| Method | Path                     | Purpose                                  |
+| ------ | ------------------------ | ---------------------------------------- |
+| `GET`  | `/api/health`            | Check build output and capability status |
+| `GET`  | `/api/capabilities`      | Check transport availability             |
+| `GET`  | `/api/serial/ports`      | List serial ports                        |
+| `GET`  | `/api/network/printers`  | List network presets from environment    |
+| `GET`  | `/api/cups/printers`     | List CUPS printers                       |
+| `GET`  | `/api/winspool/printers` | List Windows Spooler printers            |
+| `POST` | `/api/receipt/encode`    | Encode receipt input into ESC/POS bytes  |
+| `POST` | `/api/print`             | Print a receipt to the selected target   |
+
+If `/api/health` returns `ok: false`, build the repository first
+
+## Encode a Receipt
 
 ```powershell
 Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/receipt/encode -ContentType 'application/json' -Body '{
-  "encoding": "ascii",
-  "width": 32,
-  "lines": ["TEST PRINT", "SERIAL OK"],
+  "encoding": "cp949",
+  "width": 48,
+  "lines": [
+    "테스트 출력",
+    {
+      "text": "CENTER",
+      "align": "center",
+      "bold": true
+    },
+    {
+      "columns": [
+        { "text": "Americano", "width": 32 },
+        { "text": "4,500", "width": 16, "align": "right" }
+      ]
+    }
+  ],
   "divider": true,
+  "examples": {
+    "qr": {
+      "data": "https://example.com/receipt/1001",
+      "size": 6,
+      "errorCorrection": "m"
+    },
+    "barcode": {
+      "data": "880123456789",
+      "type": "ean13",
+      "width": 3,
+      "height": 80,
+      "hri": "below"
+    }
+  },
   "feed": 3,
   "cut": true
 }'
 ```
 
-## 출력 예시
+The response includes `byteLength`, `hex`, and `bytes`
 
-`COM3`와 `baudRate`는 실제 프린터 설정에 맞춥니다
+## Print
+
+Match `COM3` and `baudRate` to the real printer settings
 
 ```powershell
 Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/print -ContentType 'application/json' -Body '{
   "target": {
     "type": "serial",
     "path": "COM3",
-    "baudRate": 9600
+    "baudRate": 9600,
+    "dataBits": 8,
+    "stopBits": 1,
+    "parity": "none"
   },
   "receipt": {
-    "encoding": "ascii",
-    "lines": ["TEST PRINT", "SERIAL OK"],
+    "encoding": "cp949",
+    "lines": ["테스트 출력", "SERIAL OK"],
     "feed": 3,
     "cut": true
-  }
+  },
+  "copies": 1
 }'
 ```
 
-Network 출력은 다음처럼 테스트할 수 있습니다
+Network printing uses direct `host` and `port` values
 
 ```powershell
 Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/print -ContentType 'application/json' -Body '{
@@ -98,15 +169,32 @@ Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/print -ContentType
     "lines": ["TEST PRINT", "NETWORK OK"],
     "feed": 3,
     "cut": true
-  }
+  },
+  "copies": 1
 }'
 ```
 
-macOS와 Linux에서는 CUPS target도 같은 `/api/print`에서 사용할 수 있습니다. Windows에서는 winspool prebuild가 포함된 상태에서 winspool target을 사용할 수 있습니다
+CUPS and Winspool use the same `/api/print` endpoint
 
-## Windows 실행
+```text
+{ "type": "cups", "printerName": "Receipt" }
+{ "type": "winspool", "printerName": "Receipt" }
+```
 
-Windows에서 실행 중인 Node 프로세스가 파일을 잡고 있으면 먼저 종료한 뒤 package script를 순서대로 실행합니다
+`receipt` accepts builder input, `{ "bytes": [...] }`, or `{ "hex": "..." }`
+
+`copies` accepts values from 1 to 100
+
+## Platform Notes
+
+- CUPS printer discovery works on macOS or Linux when `lpstat` is available
+- Winspool discovery and printing work only from Windows Node
+- WSL cannot use Winspool and only receives enhanced Windows COM port candidates for serial
+- Missing Windows winspool prebuilds are shown as `prebuild_required`
+
+## Troubleshooting
+
+If a running Node process is holding files on Windows, stop it before running package scripts
 
 ```powershell
 taskkill /F /IM node.exe
@@ -115,12 +203,16 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm build
 npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 ```
 
-검증까지 같이 돌리려면 다음처럼 실행합니다
+If the server shows `unhealthy` or an API returns `ERR_BUILD_REQUIRED`, rebuild the repository
 
 ```powershell
-npm exec --yes --package pnpm@11.1.1 -- pnpm lint
-npm exec --yes --package pnpm@11.1.1 -- pnpm typecheck
-npm exec --yes --package pnpm@11.1.1 -- pnpm test
 npm exec --yes --package pnpm@11.1.1 -- pnpm build
-npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 ```
+
+## Contributors Welcome
+
+Contributions are welcome for printer test cases, hardware notes, UI fixes, and platform capability checks
+
+## License
+
+MIT
