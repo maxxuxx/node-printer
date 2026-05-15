@@ -1,6 +1,6 @@
 {
   "name": "@maxxuxx/node-printer-serial",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Serial (COM/tty) transport for printer packages",
   "license": "MIT",
   "homepage": "https://github.com/maxxuxx/node-printer#readme",

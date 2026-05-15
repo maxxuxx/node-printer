@@ -1,6 +1,6 @@
 {
   "name": "@maxxuxx/node-printer-cups",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CUPS (lp/lpr) transport for printer packages on macOS and Linux",
   "license": "MIT",
   "homepage": "https://github.com/maxxuxx/node-printer#readme",

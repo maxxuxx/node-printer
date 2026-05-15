@@ -1,6 +1,6 @@
 {
   "name": "@maxxuxx/node-printer-winspool",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Windows Spooler RAW transport (native N-API) for printer packages",
   "license": "MIT",
   "homepage": "https://github.com/maxxuxx/node-printer#readme",
