@@ -118,7 +118,7 @@ jobs:
         run: corepack pnpm install --frozen-lockfile
 
       - name: Build package
-        run: corepack pnpm --filter @node-printer/printer-winspool build
+        run: corepack pnpm --filter @node-printer/printer-winspool... build
 
       - name: Download x64 prebuild
         uses: actions/download-artifact@v4

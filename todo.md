@@ -101,8 +101,9 @@ Windows 실제 검증
 winspool 빌드/배포 정리
 
 - 관리자 PowerShell에서 Build Tools 2022 제거/재설치 또는 ARM64 컴포넌트 추가 후 `prebuild:arm64` 확인
-- GitHub Actions prebuild와 package contents job 재실행 후 VS2022 Enterprise 선택 확인
-- `vswhere` 통과 후 다음 실패가 있으면 node-gyp/prebuildify 로그 기준으로 추가 확인
+- GitHub Actions prebuild job은 통과했으며 VS2022 Enterprise 선택 확인
+- GitHub Actions package contents job의 `Build package`가 의존 패키지까지 빌드하도록 수정
+- GitHub Actions package contents job 재실행 후 artifact 다운로드와 `pack:check` 통과 확인
 - Windows에서 `prebuild:all` 실제 실행 확인
 - 실제 prebuild artifact 확보 후 `pnpm --filter @node-printer/printer-winspool pack:check` 통과 확인
 - npm publish 전 `prebuilds/win32-{arch}/*.node` 포함 확인
