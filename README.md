@@ -1,4 +1,5 @@
 # node-printer
+[![npm version](https://img.shields.io/npm/v/@maxxuxx/node-printer.svg)](https://www.npmjs.com/package/@maxxuxx/node-printer)
 
 [Korean](README.ko.md)
 
