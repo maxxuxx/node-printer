@@ -1,0 +1,53 @@
+{
+  "name": "@node-printer/serial",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serial (COM/tty) transport for printer packages",
+  "license": "MIT",
+  "homepage": "https://github.com/maxxuxx/node-printer#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maxxuxx/node-printer.git",
+    "directory": "apps/serial"
+  },
+  "bugs": {
+    "url": "https://github.com/maxxuxx/node-printer/issues"
+  },
+  "keywords": [
+    "escpos",
+    "receipt",
+    "printer",
+    "serial",
+    "com",
+    "tty"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --clean --sourcemap && tsc -p tsconfig.json --emitDeclarationOnly",
+    "lint": "eslint src test --max-warnings=0",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@node-printer/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^25.7.0"
+  }
+}

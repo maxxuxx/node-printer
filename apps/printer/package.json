@@ -1,0 +1,57 @@
+{
+  "name": "@maxxuxx/node-printer",
+  "version": "1.0.0",
+  "description": "Unified entry point for ESC/POS receipt printer transports (serial, network, CUPS, Windows Spooler)",
+  "license": "MIT",
+  "homepage": "https://github.com/maxxuxx/node-printer#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxxuxx/node-printer.git",
+    "directory": "apps/printer"
+  },
+  "bugs": {
+    "url": "https://github.com/maxxuxx/node-printer/issues"
+  },
+  "keywords": [
+    "escpos",
+    "receipt",
+    "printer",
+    "thermal-printer",
+    "pos",
+    "winspool",
+    "cups",
+    "serial",
+    "tcp"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist",
+    "prebuilds"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node scripts/sync-prebuilds.cjs && tsup --config tsup.config.ts",
+    "lint": "eslint src test --max-warnings=0",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "iconv-lite": "^0.7.0"
+  }
+}

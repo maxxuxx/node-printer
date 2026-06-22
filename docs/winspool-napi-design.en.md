@@ -2,7 +2,7 @@
 
 [Korean](winspool-napi-design.md)
 
-`@maxxuxx/node-printer-winspool` is a Windows-only optional native package
+`@node-printer/winspool` is a Windows-only private native module
 
 The goal is to implement Windows Spooler RAW printing and printer discovery directly, while keeping top-level `@maxxuxx/node-printer` installs from failing on non-Windows platforms
 
@@ -14,7 +14,7 @@ The goal is to implement Windows Spooler RAW printing and printer discovery dire
 | Runtime        | Node.js 20+         |
 | Native API     | Windows Spooler API |
 | Native binding | N-API, C++17        |
-| Prebuild       | prebuildify         |
+| Prebuild       | Visual Studio cl    |
 | Package        | TypeScript, tsup    |
 
 
@@ -37,7 +37,7 @@ The goal is to implement Windows Spooler RAW printing and printer discovery dire
 - Call the Windows Spooler API from C++
 - Expose a Promise-based JavaScript API
 - Prefer `node-addon-api` where practical
-- Generate prebuilt binaries with `prebuildify`
+- Generate prebuilt binaries with Visual Studio `cl` and `link`
 - Load bundled prebuilds from the npm package only
 - Do not provide an install-time source build fallback
 
@@ -47,19 +47,19 @@ The intent is to reduce rebuild pressure across Electron major versions by reusi
 
 ## Package strategy
 
-The package is designed as a Windows-only optional package
+The module is designed as a Windows-only private transport
 
 ```text
-packages/
-  printer-winspool/
+apps/
+  winspool/
 ```
 
 Recommended dependency direction
 
 ```text
-@maxxuxx/node-printer-core
+@node-printer/core
   ↑
-@maxxuxx/node-printer-winspool
+@node-printer/winspool
 ```
 
 The top-level `@maxxuxx/node-printer` package loads winspool behind a Windows platform guard
@@ -96,12 +96,12 @@ On failure, opened handles and started document or page state are cleaned up whe
 
 ## Public JavaScript API
 
-The published TypeScript API stays small and transport-focused
+The module TypeScript API stays small and transport-focused
 
-The native addon exports `listPrinters` and `getDefaultPrinter` at the binding layer, but the npm package entry points are the functions below
+The native addon exports `listPrinters` and `getDefaultPrinter` at the binding layer, but the public package entry points are the functions below
 
 ```ts
-import type { WinspoolPrinterTarget } from "@maxxuxx/node-printer-core";
+import type { WinspoolPrinterTarget } from "@node-printer/core";
 
 export interface WinspoolPrinterInfo {
   name: string;
@@ -168,13 +168,13 @@ The transport layer normalizes them into `PrinterError`
 
 Distribution is prebuilt-binary first
 
-- Generate Windows ia32, x64, and arm64 artifacts with `prebuildify`
+- Generate Windows ia32, x64, and arm64 artifacts with Visual Studio `cl` and `link`
 - Load only the `.node` file under `prebuilds/win32-{arch}` at runtime
 - Build on a GitHub Actions Windows runner
 - Ship prebuild artifacts inside the npm package
 - Use source builds only when generating prebuilds in this repository
 
-N-API compatibility starts with `NAPI_VERSION=3` in `binding.gyp`
+N-API compatibility starts with the `NAPI_VERSION=3` definition in the prebuild script
 
 Prebuild scripts follow this shape
 
@@ -186,11 +186,11 @@ Prebuild scripts follow this shape
 }
 ```
 
-The prebuild wrapper uses `vswhere` to locate a Visual Studio C++ installation and passes `npm_config_msvs_version` to node-gyp
+The prebuild wrapper uses `vswhere` to locate Visual Studio C++ components, runs `vcvarsall.bat`, then calls `cl` and `link` directly
 
 ARM64 cross builds require both x64 host tools and ARM64 tools
 
-Output follows the default `prebuildify` layout
+Output follows the prebuild directory layout used by the runtime loader
 
 ```text
 prebuilds/
@@ -202,15 +202,15 @@ prebuilds/
     *.node
 ```
 
-Depending on the `prebuildify` version, the generated file may be named `node.napi.node` or use a package-based name
+The default file name is `@node-printer+winspool.node`
 
-The runtime loader discovers the `.node` file inside the matching directory
+The runtime loader also discovers other `.node` files inside the matching directory in a stable order
 
 The npm package includes only `dist/**` and `prebuilds/**/*.node`
 
-It does not ship `native/`, `binding.gyp`, `scripts/`, `build/`, `.pdb`, `.iobj`, or `.ipdb`
+It does not ship `native/`, `scripts/`, `build/`, `.pdb`, `.iobj`, or `.ipdb`
 
-The install script is a no-op that prevents npm's default `node-gyp rebuild`
+There is no install script or source build fallback
 
 If no prebuild is available, runtime fails with `ERR_NATIVE_MODULE_UNAVAILABLE`
 
@@ -254,7 +254,7 @@ Hardware testing is manual or runs on a separate self-hosted Windows machine
 
 ## Initial implementation steps
 
-1. `packages/printer-winspool` scaffold
+1. `apps/winspool` scaffold
 2. N-API addon build wiring
 3. Unsupported platform JavaScript fallback
 4. `listPrinters` native binding
@@ -266,10 +266,10 @@ Hardware testing is manual or runs on a separate self-hosted Windows machine
 
 ## Current native status
 
-- The `packages/printer-winspool` scaffold exists
+- The `apps/winspool` scaffold exists
 - The TypeScript wrapper exposes `listWinspoolPrinters`, `getDefaultWinspoolPrinter`, `printRaw`, and `createWinspoolPrinter`
 - Non-Windows calls fail with `ERR_UNSUPPORTED_PLATFORM`
-- `binding.gyp` builds `native/src/winspool.cc` with C++17
+- `scripts/prebuild.cjs` builds `native/src/winspool.cc` with C++17
 - The native binding implements `EnumPrintersW`, `GetDefaultPrinterW`, and the RAW `WritePrinter` flow
 - RAW printing runs through `napi_async_work` so Spooler writes do not block the Node event loop for long stretches
 - Native errors include `code`, `operation`, `win32Code`, and optional `printerName`

@@ -180,31 +180,6 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm install
 
 최후의 수단으로 관리자 권한 PowerShell에서 같은 명령을 실행합니다
 
-## Cursor에서 `serialport` 모듈을 찾을 수 없을 때
-
-다음 오류는 설치가 끝까지 끝나지 않았거나 TypeScript 서버가 오래된 상태를 보고 있을 때가 많습니다
-
-```text
-'serialport' 모듈 또는 해당 형식 선언을 찾을 수 없습니다.ts(2307)
-```
-
-먼저 설치를 다시 확인합니다
-
-```powershell
-cd C:\Github\node-printer
-
-npm exec --yes --package pnpm@11.1.1 -- pnpm install
-npm exec --yes --package pnpm@11.1.1 -- pnpm -r list serialport
-```
-
-목록에 `serialport`가 보이면 Cursor에서 TypeScript 서버를 재시작합니다
-
-1. `Ctrl + Shift + P`
-2. `TypeScript: Restart TS Server`
-3. 그래도 남으면 `Developer: Reload Window`
-
-목록에 없으면 이 문서의 `node_modules` EPERM 절차로 재설치합니다
-
 ## Windows Node가 의존성을 찾지 못할 때
 
 다음 오류는 패키지가 빠진 것이 아니라, Windows Node가 현재 `node_modules` 레이아웃을 제대로 읽지 못하는 경우일 수 있습니다
@@ -226,14 +201,14 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm install
 필요하면 패키지 디렉터리에서 다시 빌드합니다
 
 ```powershell
-cd C:\Github\node-printer\packages\printer-winspool
+cd C:\Github\node-printer\apps\winspool
 npm run build
 npm run prebuild:all
 ```
 
 prebuild 래퍼는 패키지 스크립트로 실행합니다
 
-`node scripts\prebuild.cjs`를 직접 호출하면 `node-gyp` 경로가 빠질 수 있습니다
+스크립트는 Visual Studio 환경을 잡은 뒤 `cl`과 `link`를 직접 호출합니다
 
 ## 자주 쓰는 명령
 
@@ -271,7 +246,7 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm build
 
 ```powershell
 npm exec --yes --package pnpm@11.1.1 -- pnpm build
-node --input-type=module -e "import { listSerialPorts } from './packages/printer-serial/dist/index.js'; console.log(await listSerialPorts());"
+node --input-type=module -e "import { listSerialPorts } from './apps/printer/dist/index.js'; console.log(await listSerialPorts());"
 ```
 
 프린터가 Windows COM으로 잡혀 있으면 `COM3`, `COM4` 같은 경로가 목록에 나타납니다
