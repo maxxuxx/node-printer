@@ -4,7 +4,27 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "apps/**"
+      - "libs/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.json"
+      - "eslint.config.js"
+      - "vitest.config.ts"
+      - ".github/workflows/ci.yml"
   pull_request:
+    paths:
+      - "apps/**"
+      - "libs/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "tsconfig.json"
+      - "eslint.config.js"
+      - "vitest.config.ts"
+      - ".github/workflows/ci.yml"
 
 jobs:
   test:
