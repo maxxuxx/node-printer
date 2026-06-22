@@ -180,31 +180,6 @@ If it still fails, wait briefly and retry because Defender or antivirus may be s
 
 As a last resort, run the same commands from administrator PowerShell
 
-## Cursor cannot resolve `serialport`
-
-This error usually means the install did not finish, or the TypeScript server is stale
-
-```text
-'serialport' 모듈 또는 해당 형식 선언을 찾을 수 없습니다.ts(2307)
-```
-
-Re-check the install
-
-```powershell
-cd C:\Github\node-printer
-
-npm exec --yes --package pnpm@11.1.1 -- pnpm install
-npm exec --yes --package pnpm@11.1.1 -- pnpm -r list serialport
-```
-
-If `serialport` appears in the list, restart the TypeScript server
-
-1. `Ctrl + Shift + P`
-2. `TypeScript: Restart TS Server`
-3. If needed, `Developer: Reload Window`
-
-If it does not appear, reinstall using the `node_modules` EPERM section above
-
 ## Windows Node cannot resolve a dependency
 
 This error may mean Windows Node cannot read the current `node_modules` layout
@@ -228,14 +203,14 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm install
 When you need native artifacts, rebuild from the package directory
 
 ```powershell
-cd C:\Github\node-printer\packages\printer-winspool
+cd C:\Github\node-printer\apps\winspool
 npm run build
 npm run prebuild:all
 ```
 
 Run the prebuild wrapper through package scripts
 
-Calling `node scripts\prebuild.cjs` directly can miss the `node-gyp` path setup that scripts provide
+The script prepares the Visual Studio environment, then calls `cl` and `link` directly
 
 ## Common commands
 
@@ -273,7 +248,7 @@ Serial port list
 
 ```powershell
 npm exec --yes --package pnpm@11.1.1 -- pnpm build
-node --input-type=module -e "import { listSerialPorts } from './packages/printer-serial/dist/index.js'; console.log(await listSerialPorts());"
+node --input-type=module -e "import { listSerialPorts } from './apps/printer/dist/index.js'; console.log(await listSerialPorts());"
 ```
 
 If the printer is exposed as a Windows COM device, you should see paths such as `COM3` or `COM4`

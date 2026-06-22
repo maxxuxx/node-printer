@@ -17,7 +17,6 @@ The goal is one small API across those paths, and Windows native modules load on
 [![ESLint](https://img.shields.io/badge/ESLint-10-4B32C3?style=flat-square&logo=eslint&logoColor=white)](https://eslint.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte&logoColor=white)](https://svelte.dev/)
-[![prebuildify](https://img.shields.io/badge/prebuildify-prebuilds-222222?style=flat-square)](https://github.com/prebuild/prebuildify)
 [![N-API](https://img.shields.io/badge/N--API%20%28winspool%29-C%2B%2B17-0078D4?style=flat-square&logo=windows&logoColor=white)](https://nodejs.org/api/n-api.html)
 
 ## Install
@@ -46,7 +45,7 @@ npm install @maxxuxx/node-printer
 | Mode            | Support                 | Description                                      |
 | --------------- | ----------------------- | ------------------------------------------------ |
 | TCP(network)    | ✅ Supported             | Works on Windows, macOS, and Linux               |
-| Serial          | ✅ Supported             | Serial ports through the `serialport` package    |
+| Serial          | ✅ Supported             | Serial ports through OS COM or tty devices       |
 | CUPS            | ✅ Supported             | `lp`, `lpr`, and `lpstat` on macOS and Linux     |
 | Windows Spooler | ✅ Supported (Windows only) | Bundled N-API prebuilds on Windows          |
 
@@ -69,17 +68,21 @@ Korean receipts usually use `cp949`
 const receipt = createReceipt({ encoding: "cp949" }).text("테스트 출력").encode();
 ```
 
-## Packages
+## Workspace modules
+
+Only `@maxxuxx/node-printer` is published to npm. The other names are private internal aliases
+
+Legacy split packages named `@maxxuxx/node-printer-*` should be deprecated on npm and replaced by `@maxxuxx/node-printer`
 
 
-| Package                          | Purpose                                                                |
-| -------------------------------- | ---------------------------------------------------------------------- |
-| `@maxxuxx/node-printer`          | Unified entry point with lazy-loaded transports                        |
-| `@maxxuxx/node-printer-core`     | Shared types, errors, ESC/POS receipt builder, CP949 encoding          |
-| `@maxxuxx/node-printer-network`  | TCP 9100 transport with timeout, retry, and chunked writes             |
-| `@maxxuxx/node-printer-serial`   | Serial transport backed by `serialport`                              |
-| `@maxxuxx/node-printer-cups`     | macOS and Linux system printers through `lp`, `lpr`, and `lpstat`      |
-| `@maxxuxx/node-printer-winspool` | Windows Spooler RAW transport with bundled N-API prebuilds             |
+| Module                   | Purpose                                                           |
+| ------------------------ | ----------------------------------------------------------------- |
+| `@maxxuxx/node-printer`  | Published entry point with lazy-loaded transports                 |
+| `@node-printer/core`     | Shared types, errors, ESC/POS receipt builder, CP949 encoding     |
+| `@node-printer/network`  | TCP 9100 transport with timeout, retry, and chunked writes        |
+| `@node-printer/serial`   | Serial transport through OS COM or tty devices                    |
+| `@node-printer/cups`     | macOS and Linux system printers through `lp`, `lpr`, and `lpstat` |
+| `@node-printer/winspool` | Windows Spooler RAW transport with bundled N-API prebuilds        |
 
 
 ## Quick Start
@@ -119,7 +122,7 @@ createPrinter({ type: "winspool", printerName: "Receipt" });
 The Windows Spooler package ships bundled N-API prebuilds
 
 ```text
-packages/printer-winspool/prebuilds/
+apps/winspool/prebuilds/
   win32-x64/
   win32-ia32/
   win32-arm64/
@@ -135,18 +138,17 @@ Usually you can use the prebuilds shipped with the package as-is. When you need 
 | Source build during `npm i` | ❌ Not yet available | Planned for a later release                   |
 
 
-To build manually, use Windows PowerShell with Python and the Visual Studio C++ toolchain installed
+To refresh winspool prebuilds manually, use Windows PowerShell with Visual Studio C++ Build Tools and Windows SDK installed
 
 ```powershell
-corepack pnpm --filter @maxxuxx/node-printer-winspool... build
-corepack pnpm --filter @maxxuxx/node-printer-winspool prebuild:all
-corepack pnpm --filter @maxxuxx/node-printer-winspool pack:check
+corepack pnpm --filter @node-printer/winspool... build
+corepack pnpm --filter @node-printer/winspool prebuild:all
+corepack pnpm --filter @node-printer/winspool pack:check
 ```
 
 If you need to install Build Tools from scratch, you can use the following commands
 
 ```powershell
-winget install --id Python.Python.3.13 --exact
 winget install --id Microsoft.VisualStudio.2022.BuildTools --exact --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.Windows11SDK.26100 --includeRecommended"
 ```
 

@@ -7,16 +7,24 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "build": "corepack pnpm run build:packages && corepack pnpm run build:test-server",
+    "build": "corepack pnpm run build:all",
+    "release": "corepack pnpm run verify:release",
+    "test-server": "node apps/test-server/server.mjs",
+    "format": "prettier --write .",
+    "verify": "corepack pnpm run verify:release",
+    "verify:release": "corepack pnpm run verify:lint && corepack pnpm run verify:typecheck && corepack pnpm run verify:test && corepack pnpm run build && corepack pnpm run verify:pack",
+    "verify:lint": "corepack pnpm -r --if-present lint",
+    "verify:typecheck": "tsc -p tsconfig.json",
+    "verify:test": "corepack pnpm -r --if-present test",
+    "verify:pack": "corepack pnpm --filter @maxxuxx/node-printer pack --dry-run",
+    "build:all": "corepack pnpm run build:packages && corepack pnpm run build:test-server",
     "build:packages": "corepack pnpm -r --if-present build",
-    "build:test-server": "vite build --config examples/printer-test-server/vite.config.mjs",
-    "lint": "corepack pnpm -r --if-present lint",
-    "release:check": "corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build && corepack pnpm --filter @maxxuxx/node-printer-winspool pack:check",
-    "release:publish": "corepack pnpm --filter @maxxuxx/node-printer-core publish --access public && corepack pnpm --filter @maxxuxx/node-printer-network publish --access public && corepack pnpm --filter @maxxuxx/node-printer-serial publish --access public && corepack pnpm --filter @maxxuxx/node-printer-cups publish --access public && corepack pnpm --filter @maxxuxx/node-printer-winspool publish --access public && corepack pnpm --filter @maxxuxx/node-printer publish --access public",
-    "test": "corepack pnpm -r --if-present test",
-    "test-server": "node examples/printer-test-server/server.mjs",
-    "typecheck": "tsc -p tsconfig.json",
-    "format": "prettier --write ."
+    "build:test-server": "vite build --config apps/test-server/vite.config.mjs",
+    "lint": "corepack pnpm run verify:lint",
+    "typecheck": "corepack pnpm run verify:typecheck",
+    "test": "corepack pnpm run verify:test",
+    "release:check": "corepack pnpm run verify:release",
+    "release:publish": "corepack pnpm run release"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

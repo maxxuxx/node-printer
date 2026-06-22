@@ -16,7 +16,6 @@
 [![ESLint](https://img.shields.io/badge/ESLint-10-4B32C3?style=flat-square&logo=eslint&logoColor=white)](https://eslint.org/)
 [![Vite](https://img.shields.io/badge/Vite-8-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Svelte](https://img.shields.io/badge/Svelte-5-FF3E00?style=flat-square&logo=svelte&logoColor=white)](https://svelte.dev/)
-[![prebuildify](https://img.shields.io/badge/prebuildify-prebuilds-222222?style=flat-square)](https://github.com/prebuild/prebuildify)
 [![N-API](https://img.shields.io/badge/N--API%20%28winspool%29-C%2B%2B17-0078D4?style=flat-square&logo=windows&logoColor=white)](https://nodejs.org/api/n-api.html)
 
 ## 설치
@@ -45,7 +44,7 @@ npm install @maxxuxx/node-printer
 | 방식              | 지원                | 설명                                            |
 | --------------- | ----------------- | --------------------------------------------- |
 | TCP(네트워크)       | ✅ 지원              | Windows, macOS, Linux에서 사용 가능                 |
-| Serial          | ✅ 지원              | `serialport` 패키지로 시리얼 포트 출력                   |
+| Serial          | ✅ 지원              | OS COM 또는 tty 장치로 시리얼 포트 출력                   |
 | CUPS            | ✅ 지원              | macOS, Linux에서 `lp` / `lpr` / `lpstat` 계열로 출력 |
 | Windows Spooler | ✅ 지원 (Windows 전용) | Windows에서 번들된 N-API prebuild로 동작              |
 
@@ -68,17 +67,21 @@ npm install @maxxuxx/node-printer
 const receipt = createReceipt({ encoding: "cp949" }).text("테스트 출력").encode();
 ```
 
-## 패키지
+## 워크스페이스 모듈
+
+npm에는 `@maxxuxx/node-printer`만 배포하고, 나머지 이름은 private 내부 alias로만 사용합니다
+
+기존 `@maxxuxx/node-printer-*` 개별 패키지는 npm에서 deprecated 처리하고 `@maxxuxx/node-printer`로 대체합니다
 
 
-| 패키지                              | 용도                                                         |
-| -------------------------------- | ---------------------------------------------------------- |
-| `@maxxuxx/node-printer`          | lazy-loaded transport를 제공하는 통합 진입점                         |
-| `@maxxuxx/node-printer-core`     | 공통 타입, 오류, ESC/POS 영수증 builder, CP949 인코딩                  |
-| `@maxxuxx/node-printer-network`  | timeout, retry, chunked write를 갖춘 TCP 9100 transport       |
-| `@maxxuxx/node-printer-serial`   | `serialport` 기반 serial transport                           |
-| `@maxxuxx/node-printer-cups`     | `lp`, `lpr`, `lpstat`을 사용하는 macOS와 Linux 시스템 프린터 transport |
-| `@maxxuxx/node-printer-winspool` | bundled N-API prebuild를 포함한 Windows Spooler RAW transport  |
+| 모듈                       | 용도                                                         |
+| ------------------------ | ---------------------------------------------------------- |
+| `@maxxuxx/node-printer`  | lazy-loaded transport를 제공하는 배포 진입점                         |
+| `@node-printer/core`     | 공통 타입, 오류, ESC/POS 영수증 builder, CP949 인코딩                  |
+| `@node-printer/network`  | timeout, retry, chunked write를 갖춘 TCP 9100 transport       |
+| `@node-printer/serial`   | OS COM 또는 tty 장치를 사용하는 serial transport                     |
+| `@node-printer/cups`     | `lp`, `lpr`, `lpstat`을 사용하는 macOS와 Linux 시스템 프린터 transport |
+| `@node-printer/winspool` | bundled N-API prebuild를 포함한 Windows Spooler RAW transport        |
 
 
 ## 빠른 시작
@@ -118,7 +121,7 @@ createPrinter({ type: "winspool", printerName: "Receipt" });
 Windows Spooler 패키지는 bundled N-API prebuild를 포함합니다
 
 ```text
-packages/printer-winspool/prebuilds/
+apps/winspool/prebuilds/
   win32-x64/
   win32-ia32/
   win32-arm64/
@@ -134,18 +137,17 @@ packages/printer-winspool/prebuilds/
 | npm install 중 source build | ❌ 현재 불가 | 추후 추가 예정               |
 
 
-수동으로 빌드하려면 Python과 Visual Studio C++ 도구가 설치된 Windows PowerShell을 사용합니다
+winspool prebuild를 수동으로 갱신하려면 Visual Studio C++ Build Tools와 Windows SDK가 설치된 Windows PowerShell을 사용합니다
 
 ```powershell
-corepack pnpm --filter @maxxuxx/node-printer-winspool... build
-corepack pnpm --filter @maxxuxx/node-printer-winspool prebuild:all
-corepack pnpm --filter @maxxuxx/node-printer-winspool pack:check
+corepack pnpm --filter @node-printer/winspool... build
+corepack pnpm --filter @node-printer/winspool prebuild:all
+corepack pnpm --filter @node-printer/winspool pack:check
 ```
 
 Build Tools를 새로 설치해야 한다면 다음 명령을 사용할 수 있습니다
 
 ```powershell
-winget install --id Python.Python.3.13 --exact
 winget install --id Microsoft.VisualStudio.2022.BuildTools --exact --override "--wait --passive --norestart --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.Windows11SDK.26100 --includeRecommended"
 ```
 

@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "paths": {
+      "#core": ["../../libs/core/src/index.ts"],
+      "#cups": ["../../apps/cups/src/index.ts"],
+      "#network": ["../../apps/network/src/index.ts"],
+      "#serial": ["../../apps/serial/src/index.ts"],
+      "#winspool": ["../../apps/winspool/src/index.ts"],
+      "@node-printer/core": ["../../libs/core/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

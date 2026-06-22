@@ -1,0 +1,62 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  publish:
+    if: github.repository == 'maxxuxx/node-printer'
+    runs-on: windows-2022
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Verify
+        run: corepack pnpm run verify
+
+      - name: Check published version
+        id: package
+        shell: pwsh
+        run: |
+          $name = node -p "require('./apps/printer/package.json').name"
+          $version = node -p "require('./apps/printer/package.json').version"
+
+          "name=$name" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+          npm view "$name@$version" version *> $null
+
+          if ($LASTEXITCODE -eq 0) {
+            "published=true" >> $env:GITHUB_OUTPUT
+          } else {
+            "published=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Publish to npm
+        if: steps.package.outputs.published == 'false'
+        working-directory: apps/printer
+        run: npm publish --access public
+
+      - name: Skip existing version
+        if: steps.package.outputs.published == 'true'
+        run: echo "${{ steps.package.outputs.name }}@${{ steps.package.outputs.version }} is already published"
