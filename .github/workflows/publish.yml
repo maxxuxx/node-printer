@@ -9,7 +9,7 @@ on:
 jobs:
   publish:
     if: github.repository == 'maxxuxx/node-printer'
-    runs-on: windows-2022
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
@@ -36,21 +36,19 @@ jobs:
 
       - name: Check published version
         id: package
-        shell: pwsh
+        shell: bash
         run: |
-          $name = node -p "require('./apps/printer/package.json').name"
-          $version = node -p "require('./apps/printer/package.json').version"
+          name="$(node -p "require('./apps/printer/package.json').name")"
+          version="$(node -p "require('./apps/printer/package.json').version")"
 
-          "name=$name" >> $env:GITHUB_OUTPUT
-          "version=$version" >> $env:GITHUB_OUTPUT
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
-          npm view "$name@$version" version *> $null
-
-          if ($LASTEXITCODE -eq 0) {
-            "published=true" >> $env:GITHUB_OUTPUT
-          } else {
-            "published=false" >> $env:GITHUB_OUTPUT
-          }
+          if npm view "$name@$version" version > /dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Publish to npm
         if: steps.package.outputs.published == 'false'
