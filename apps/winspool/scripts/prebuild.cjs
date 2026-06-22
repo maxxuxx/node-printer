@@ -1,6 +1,12 @@
 #!/usr/bin/env node
 
-const { createWriteStream, existsSync, mkdirSync, rmSync } = require("node:fs");
+const {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync
+} = require("node:fs");
 const { get }                                          = require("node:https");
 const { dirname, join, resolve }                       = require("node:path");
 const { spawnSync }                                    = require("node:child_process");
@@ -194,6 +200,7 @@ function buildNativeAddon(options) {
   const outputPath     = join(outputDir, "@node-printer+winspool.node");
   const objectPath     = join(buildDir, "winspool.obj");
   const importLibPath  = join(buildDir, "winspool.lib");
+  const commandPath    = join(buildDir, `build-${options.arch}.cmd`);
   const vcvarsArgument = VCVARS_ARCH[options.arch];
 
   rmSync(buildDir, { force: true, recursive: true });
@@ -220,8 +227,16 @@ function buildNativeAddon(options) {
     "Winspool.lib"
   ].join(" ");
 
-  const command = `call ${quoteArg(options.vcvarsPath)} ${vcvarsArgument} && ${compileCommand}`;
-  const result  = spawnSync("cmd.exe", ["/d", "/s", "/c", command], {
+  const commandLines = [
+    "@echo off",
+    `call ${quoteArg(options.vcvarsPath)} ${vcvarsArgument}`,
+    "if errorlevel 1 exit /b %errorlevel%",
+    compileCommand
+  ];
+
+  writeFileSync(commandPath, `${commandLines.join("\r\n")}\r\n`);
+
+  const result = spawnSync("cmd.exe", ["/d", "/c", commandPath], {
     cwd  : packageDir,
     stdio: "inherit"
   });

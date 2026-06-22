@@ -4,4 +4,3 @@ build/
 coverage/
 apps/printer/prebuilds/
 *.tsbuildinfo
-test/
