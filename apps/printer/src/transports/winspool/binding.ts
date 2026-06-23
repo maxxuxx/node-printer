@@ -1,4 +1,4 @@
-import { existsSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -88,11 +88,9 @@ export function resolveWinspoolPackageRoot(currentDir: string): string {
   const bundledPackageRoot = resolve(currentDir, "..");
   const sourcePackageRoot  = resolve(currentDir, "..", "..", "..");
 
-  for (const packageRoot of [bundledPackageRoot, sourcePackageRoot]) {
-    if (existsSync(resolve(packageRoot, "prebuilds"))) {
-      return packageRoot;
-    }
-  }
+  return isSourceWinspoolDirectory(currentDir) ? sourcePackageRoot : bundledPackageRoot;
+}
 
-  return bundledPackageRoot;
+function isSourceWinspoolDirectory(currentDir: string): boolean {
+  return currentDir.replace(/\\/g, "/").endsWith("/src/transports/winspool");
 }
