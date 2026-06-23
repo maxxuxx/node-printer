@@ -1,12 +1,9 @@
 packages:
   - "apps/printer"
-  - "apps/network"
-  - "apps/serial"
-  - "apps/cups"
-  - "apps/winspool"
-  - "libs/core"
 
 onlyBuiltDependencies:
+  - '@serialport/bindings-cpp'
   - esbuild
 allowBuilds:
+  '@serialport/bindings-cpp': true
   esbuild: true

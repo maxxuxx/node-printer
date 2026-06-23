@@ -2,7 +2,7 @@
 
 [English](winspool-napi-design.en.md)
 
-`@node-printer/winspool`은 Windows 전용 private native 모듈로 둡니다
+`apps/printer/src/transports/winspool`은 Windows 전용 private native 모듈로 둡니다
 
 Windows Spooler RAW 출력과 프린터 목록 조회를 직접 구현하되, 최상위 `@maxxuxx/node-printer` 설치가 Windows가 아닌 환경에서 실패하지 않도록 격리하는 것이 목표입니다
 
@@ -56,9 +56,9 @@ apps/
 권장 의존 방향은 다음과 같습니다
 
 ```text
-@node-printer/core
+apps/printer/src/core
   ↑
-@node-printer/winspool
+apps/printer/src/transports/winspool
 ```
 
 최상위 `@maxxuxx/node-printer`는 winspool 모듈을 Windows 플랫폼 가드 뒤에서 로드합니다
@@ -100,7 +100,7 @@ ClosePrinter
 네이티브 addon이 export하는 `listPrinters` / `getDefaultPrinter`는 바인딩 레이어 이름이고, public package에서 권장하는 진입점은 아래 함수들입니다
 
 ```ts
-import type { WinspoolPrinterTarget } from "@node-printer/core";
+import type { WinspoolPrinterTarget } from "apps/printer/src/core";
 
 export interface WinspoolPrinterInfo {
   name: string;
@@ -249,7 +249,7 @@ CI에서는 실제 프린터 출력까지 강제하지 않습니다
 
 ## 초기 구현 단계
 
-1. `apps/winspool` 스캐폴드
+1. `apps/printer/src/transports/winspool` 스캐폴드
 2. N-API addon 빌드 설정
 3. 미지원 플랫폼 JavaScript 폴백
 4. `listPrinters` native binding
@@ -261,7 +261,7 @@ CI에서는 실제 프린터 출력까지 강제하지 않습니다
 
 ## 현재 네이티브 구현 상태
 
-- `apps/winspool` 패키지 스캐폴드가 존재합니다
+- `apps/printer/src/transports/winspool` 패키지 스캐폴드가 존재합니다
 - TypeScript 래퍼는 `listWinspoolPrinters`, `getDefaultWinspoolPrinter`, `printRaw`, `createWinspoolPrinter`를 노출합니다
 - Windows가 아닌 환경에서의 호출은 `ERR_UNSUPPORTED_PLATFORM`으로 실패합니다
 - `scripts/prebuild.cjs`는 `native/src/winspool.cc`를 C++17로 빌드합니다

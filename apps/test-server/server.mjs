@@ -11,7 +11,7 @@ const packageEntry = join(rootDir, "apps/printer/dist/index.js");
 const publicDir = join(rootDir, "apps/test-server/public");
 const winspoolPrebuildDir = join(
   rootDir,
-  "apps/winspool/prebuilds",
+  "apps/printer/prebuilds",
   `${process.platform}-${process.arch}`
 );
 
@@ -107,8 +107,8 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === "GET" && url.pathname === "/api/serial/ports") {
-    const { listSerialPorts } = await loadPrinterPackage();
-    const ports = await listSerialPorts();
+    const { listPrinters } = await loadPrinterPackage();
+    const ports = await listPrinters("serial");
 
     sendJson(response, 200, {
       ok: true,
@@ -118,10 +118,32 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  if (request.method === "GET" && url.pathname === "/api/usb/printers") {
+    if ((await getUsbCapability()) !== "ready") {
+      sendJson(response, 200, {
+        ok: true,
+        unsupported: true,
+        printers: [],
+        runtime: getRuntimeInfo(),
+        message: "USB printer listing requires CUPS on macOS or Linux, or Winspool on Windows"
+      });
+      return;
+    }
+
+    const { listPrinters } = await loadPrinterPackage();
+    const printers = await listPrinters("usb");
+
+    sendJson(response, 200, { ok: true, printers, runtime: getRuntimeInfo() });
+    return;
+  }
+
   if (request.method === "GET" && url.pathname === "/api/network/printers") {
+    const { listPrinters } = await loadPrinterPackage();
+    const printers = await listPrinters("network");
+
     sendJson(response, 200, {
       ok: true,
-      printers: getNetworkPrinterPresets(),
+      printers,
       runtime: getRuntimeInfo()
     });
     return;
@@ -140,8 +162,8 @@ async function handleApi(request, response, url) {
       return;
     }
 
-    const { listCupsPrinters } = await loadPrinterPackage();
-    const printers = await listCupsPrinters();
+    const { listPrinters } = await loadPrinterPackage();
+    const printers = await listPrinters("cups");
 
     sendJson(response, 200, { ok: true, printers, runtime: getRuntimeInfo() });
     return;
@@ -160,8 +182,8 @@ async function handleApi(request, response, url) {
       return;
     }
 
-    const { listWinspoolPrinters } = await loadPrinterPackage();
-    const printers = await listWinspoolPrinters();
+    const { listPrinters } = await loadPrinterPackage();
+    const printers = await listPrinters("winspool");
 
     sendJson(response, 200, { ok: true, printers, runtime: getRuntimeInfo() });
     return;
@@ -169,15 +191,15 @@ async function handleApi(request, response, url) {
 
   if (request.method === "POST" && url.pathname === "/api/receipt/encode") {
     const body = await readJsonBody(request);
-    const { receipt } = await buildReceipt(body);
+    const { receipt, hex, preview } = await buildReceipt(body);
     const receiptBytes = Array.from(receipt);
-    const receiptHex = Buffer.from(receipt).toString("hex");
 
     sendJson(response, 200, {
       ok: true,
       byteLength: receipt.byteLength,
-      hex: receiptHex,
-      bytes: receiptBytes
+      hex,
+      bytes: receiptBytes,
+      preview
     });
     return;
   }
@@ -219,39 +241,26 @@ async function handlePrint(response, body) {
     );
   }
 
-  const { createPrinter } = await loadPrinterPackage();
+  const { print } = await loadPrinterPackage();
   const receipt = await readReceiptInput(body?.receipt);
   const copies = normalizeCopies(body?.copies);
-  const printer = createPrinter(target);
   const results = [];
 
-  try {
-    for (let copy = 1; copy <= copies; copy += 1) {
-      const result = await printer.print(receipt);
+  for (let copy = 1; copy <= copies; copy += 1) {
+    const result = await print(target, receipt);
 
-      results.push({
-        copy,
-        ...result
-      });
-    }
-
-    await printer.close?.();
-
-    sendJson(response, 200, {
-      ok: true,
-      copies,
-      result: results.at(-1),
-      results
+    results.push({
+      copy,
+      ...result
     });
-  } catch (error) {
-    try {
-      await printer.close?.();
-    } catch {
-      // 호출자에게 원래 출력 오류를 보여주기 위해 close 오류는 숨김
-    }
-
-    throw error;
   }
+
+  sendJson(response, 200, {
+    ok: true,
+    copies,
+    result: results.at(-1),
+    results
+  });
 }
 
 // 빌드와 플랫폼 조건을 합쳐 UI에 노출할 기능 상태를 계산
@@ -265,10 +274,15 @@ async function getCapabilities(packageReady) {
   return {
     core: ready ? "ready" : "build_required",
     serial: ready ? "ready" : "build_required",
+    usb: ready ? await getUsbCapability() : "build_required",
     network: ready ? "ready" : "build_required",
     cups: ready ? await getCupsCapability() : "build_required",
     winspool: ready ? await getWinspoolCapability() : "build_required"
   };
+}
+
+async function getUsbCapability() {
+  return process.platform === "win32" ? getWinspoolCapability() : getCupsCapability();
 }
 
 // lpstat 사용 가능 여부로 CUPS 목록 조회 가능성을 판단
@@ -348,71 +362,19 @@ function withSerialPortHints(ports) {
   return [...mappedPorts, ...hints];
 }
 
-// 환경 변수의 JSON 또는 콤마 문자열을 network preset 목록으로 변환
-function getNetworkPrinterPresets() {
-  const raw = process.env.PRINTER_NETWORK_TARGETS;
-
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-
-    if (Array.isArray(parsed)) {
-      return parsed.map(normalizeNetworkPrinterPreset).filter(Boolean);
-    }
-  } catch {
-    return raw.split(",").map(parseNetworkPrinterPreset).filter(Boolean);
-  }
-
-  return [];
-}
-
-// network preset 입력을 UI와 API가 쓰는 공통 형태로 정규화
-function normalizeNetworkPrinterPreset(value, index = 0) {
-  if (!value || typeof value !== "object" || !value.host) {
-    return undefined;
-  }
-
-  const port = Number(value.port ?? 9100);
-
-  return {
-    id: String(value.id ?? value.host),
-    name: String(value.name ?? value.host),
-    host: String(value.host),
-    port: Number.isInteger(port) && port > 0 && port <= 65535 ? port : 9100,
-    isDefault: Boolean(value.isDefault ?? index === 0)
-  };
-}
-
-function parseNetworkPrinterPreset(value, index) {
-  const [host, port] = String(value).trim().split(":");
-
-  if (!host) {
-    return undefined;
-  }
-
-  return normalizeNetworkPrinterPreset(
-    {
-      host,
-      port,
-      isDefault: index === 0
-    },
-    index
-  );
-}
-
 // 영수증 보조 함수
 // 영수증 본문과 예제 옵션을 printer-core receipt 명령으로 조립
 async function buildReceipt(input) {
   const { createReceipt } = await loadPrinterPackage();
   const receipt = createReceipt({
     encoding: input?.encoding,
-    width: input?.width
+    width: toOptionalNumber(input?.width),
+    paper: input?.paper,
+    charsPerLine: toOptionalNumber(input?.charsPerLine)
   });
 
   receipt.initialize();
+  applyReceiptBlocks(receipt, getCodePageBlocks(input?.blocks));
 
   for (const line of normalizeLines(input?.lines)) {
     if (typeof line === "string") {
@@ -436,6 +398,7 @@ async function buildReceipt(input) {
     receipt.divider(typeof input.divider === "string" ? input.divider : undefined);
   }
 
+  applyReceiptBlocks(receipt, getContentBlocks(input?.blocks));
   applyReceiptExamples(receipt, input?.examples);
 
   if (Number.isInteger(input?.feed)) {
@@ -446,7 +409,143 @@ async function buildReceipt(input) {
     receipt.cut(typeof input.cut === "string" ? input.cut : undefined);
   }
 
-  return { receipt: receipt.encode() };
+  return {
+    receipt: receipt.encode(),
+    preview: receipt.preview(),
+    hex: receipt.toHex()
+  };
+}
+
+// Receipt block helpers
+function getCodePageBlocks(blocks) {
+  return Array.isArray(blocks) ? blocks.filter((block) => block?.type === "codePage") : [];
+}
+
+function getContentBlocks(blocks) {
+  return Array.isArray(blocks) ? blocks.filter((block) => block?.type !== "codePage") : [];
+}
+
+function applyReceiptBlocks(receipt, blocks) {
+  if (!Array.isArray(blocks)) {
+    return;
+  }
+
+  for (const block of blocks) {
+    applyReceiptBlock(receipt, block);
+  }
+}
+
+function applyReceiptBlock(receipt, block) {
+  if (!block || typeof block !== "object") {
+    return;
+  }
+
+  if (block.type === "text") {
+    receipt.text(String(block.text ?? ""), block.options ?? block);
+    return;
+  }
+
+  if (block.type === "title") {
+    receipt.title(String(block.text ?? ""), block.options ?? block);
+    return;
+  }
+
+  if (block.type === "section") {
+    receipt.section(String(block.text ?? ""), block.options ?? block);
+    return;
+  }
+
+  if (block.type === "wrap") {
+    receipt.wrap(String(block.text ?? ""), block.options ?? block);
+    return;
+  }
+
+  if (block.type === "truncate") {
+    receipt.truncate(String(block.text ?? ""), block.options ?? block);
+    return;
+  }
+
+  if (block.type === "divider") {
+    receipt.divider(block.options ?? block);
+    return;
+  }
+
+  if (block.type === "blank") {
+    receipt.blank(toOptionalNumber(block.lines) ?? 1);
+    return;
+  }
+
+  if (block.type === "leftRight") {
+    receipt.leftRight(String(block.left ?? ""), String(block.right ?? ""), block.options ?? block);
+    return;
+  }
+
+  if (block.type === "keyValue") {
+    receipt.keyValue(String(block.label ?? ""), String(block.value ?? ""), block.options ?? block);
+    return;
+  }
+
+  if (block.type === "columns") {
+    receipt.columns(Array.isArray(block.columns) ? block.columns : [], block.options ?? block);
+    return;
+  }
+
+  if (block.type === "table") {
+    receipt.table({
+      columns: Array.isArray(block.columns) ? block.columns : [],
+      rows: Array.isArray(block.rows) ? block.rows : [],
+      divider: block.divider,
+      wrap: block.wrap
+    });
+    return;
+  }
+
+  if (block.type === "items") {
+    receipt.items(Array.isArray(block.items) ? block.items : [], block.options ?? block);
+    return;
+  }
+
+  if (block.type === "totals") {
+    receipt.totals(Array.isArray(block.rows) ? block.rows : [], block.options ?? block);
+    return;
+  }
+
+  if (block.type === "amount") {
+    receipt.amount(Number(block.value ?? 0), block.options ?? block);
+    return;
+  }
+
+  if (block.type === "style") {
+    receipt.style(block.options ?? block, () => applyReceiptBlocks(receipt, block.blocks ?? block.children));
+    return;
+  }
+
+  if (block.type === "codePage") {
+    receipt.codePage(Number(block.page));
+    if (block.encoding) {
+      receipt.encoding(block.encoding);
+    }
+    return;
+  }
+
+  if (block.type === "font") {
+    receipt.font(block.value ?? "a");
+    return;
+  }
+
+  if (block.type === "invert") {
+    receipt.invert(block.enabled !== false);
+    return;
+  }
+
+  if (block.type === "cashDrawer") {
+    receipt.cashDrawer(block.options ?? block);
+    return;
+  }
+
+  if (block.type === "beep") {
+    receipt.beep(toOptionalNumber(block.count) ?? 1, toOptionalNumber(block.duration) ?? 1);
+  }
 }
 
 // QR barcode image 예제를 가운데 정렬로 추가하고 기본 정렬을 복원

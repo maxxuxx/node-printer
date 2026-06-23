@@ -1,6 +1,13 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "paths": {
+      "#core": ["./src/core/index.ts"],
+      "#cups": ["./src/transports/cups/index.ts"],
+      "#network": ["./src/transports/network/index.ts"],
+      "#serial": ["./src/transports/serial/index.ts"],
+      "#winspool": ["./src/transports/winspool/index.ts"]
+    },
     "rootDir": "src",
     "outDir": "dist"
   },

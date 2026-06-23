@@ -4,12 +4,11 @@ import { defineConfig } from "vitest/config";
 
 // 테스트에서 빌드 산출물 대신 각 패키지의 현재 소스를 직접 바라보게 합니다
 const workspacePackages = {
-  "#core"                         : "./libs/core/src/index.ts",
-  "#cups"                         : "./apps/cups/src/index.ts",
-  "#network"                      : "./apps/network/src/index.ts",
-  "#serial"                       : "./apps/serial/src/index.ts",
-  "#winspool"                     : "./apps/winspool/src/index.ts",
-  "@node-printer/core"            : "./libs/core/src/index.ts"
+  "#core"    : "./apps/printer/src/core/index.ts",
+  "#cups"    : "./apps/printer/src/transports/cups/index.ts",
+  "#network" : "./apps/printer/src/transports/network/index.ts",
+  "#serial"  : "./apps/printer/src/transports/serial/index.ts",
+  "#winspool": "./apps/printer/src/transports/winspool/index.ts"
 };
 
 const alias = Object.fromEntries(

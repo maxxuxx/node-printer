@@ -1,20 +1,4 @@
 export * from "#core";
-export {
-  createCupsPrinter,
-  listCupsPrinters,
-  parseLpstatPrinters,
-  printRaw as printCupsRaw
-} from "#cups";
-export {
-  createNetworkPrinter
-} from "#network";
-export { createSerialPrinter, listSerialPorts } from "#serial";
-export {
-  createWinspoolPrinter,
-  getDefaultWinspoolPrinter,
-  listWinspoolPrinters,
-  printRaw as printWinspoolRaw
-} from "#winspool";
 export type {
   CupsCommandRequest,
   CupsCommandResult,
@@ -26,6 +10,8 @@ export type {
 } from "#cups";
 export type {
   NetworkConnectionOptions,
+  NetworkPortProbe,
+  NetworkPrinterInfo,
   NetworkPrinterDependencies,
   NetworkSocket,
   NormalizedNetworkPrinterTarget,
@@ -46,4 +32,40 @@ export type {
   WinspoolPrinterInfo
 } from "#winspool";
 
-export * from "./create-printer.js";
+export {
+  createPrinterBridge,
+  exposePrinterBridge,
+  PRINTER_BRIDGE_NAME
+} from "./bridge.js";
+export type {
+  PrinterBridge,
+  PrinterBridgeContext,
+  PrinterBridgeData,
+  PrinterBridgeReceipt,
+  PrinterBridgeGlobal,
+  PrinterBridgeWindow,
+  PrinterIdInput,
+  ReceiptPrintOptions,
+  ReceiptPrintResult
+} from "./bridge.js";
+export {
+  clearSavedPrinters,
+  configurePrinterSettings,
+  getSavedPrinter,
+  listSavedPrinters,
+  removeSavedPrinter,
+  savePrinter
+} from "./api/printer-settings.js";
+export type {
+  PrinterSettingsConfig,
+  ReceiptProfile,
+  SavedPrinter,
+  SavedPrinterType,
+  SavePrinterInput,
+  SaveNetworkPrinterInput,
+  SaveSerialPrinterInput,
+  SaveUsbPrinterInput
+} from "./api/printer-settings.js";
+export { listPrinters } from "./api/list-printers.js";
+export { print } from "./api/print.js";
+export type { ListPrinterType, PrinterListResult, PrinterMethodOptions } from "./api/types.js";

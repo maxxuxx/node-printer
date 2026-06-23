@@ -6,8 +6,6 @@
 
 이 패키지는 serial, network, CUPS, Windows Spooler 프린터를 하나의 진입점으로 제공합니다
 
-
-
 ## 사용 스택
 
 
@@ -21,15 +19,11 @@
 | Native loading | Lazy import, bundled prebuild          |
 
 
-
-
 ## 설치
 
 ```bash
 npm install @maxxuxx/node-printer
 ```
-
-
 
 ## 가능 여부
 
@@ -37,19 +31,17 @@ npm install @maxxuxx/node-printer
 | 기능                         | 상태    | 설명                               |
 | -------------------------- | ----- | -------------------------------- |
 | Network TCP 9100           | ✅ 가능  | Windows, macOS, Linux에서 사용 가능    |
-| Serial COM 또는 tty          | ✅ 가능  | OS COM 또는 tty 장치 사용          |
+| Serial COM 또는 tty          | ✅ 가능  | serialport 기반 COM 또는 tty 사용      |
 | CUPS 출력                    | ✅ 가능  | macOS, Linux에서 사용 가능             |
 | Windows Spooler RAW        | ✅ 가능  | Windows에서 bundled prebuild로 동작   |
 | macOS 또는 Linux Winspool    | ❌ 불가능 | `ERR_UNSUPPORTED_PLATFORM` throw |
 | npm install 중 source build | ❌ 미제공 | 배포 패키지는 bundled prebuild를 기대     |
 
 
-
-
 ## 빠른 시작
 
 ```ts
-import { createPrinter, createReceipt } from "@maxxuxx/node-printer";
+import { createReceipt, print } from "@maxxuxx/node-printer";
 
 const receipt = createReceipt({ encoding: "cp949" })
   .initialize()
@@ -60,14 +52,11 @@ const receipt = createReceipt({ encoding: "cp949" })
   .cut()
   .encode();
 
-const printer = createPrinter({
+await print({
   type: "network",
   host: "192.168.0.50",
   port: 9100
-});
-
-await printer.print(receipt);
-await printer.close?.();
+}, receipt);
 ```
 
 ## 프린터 선택
@@ -75,17 +64,17 @@ await printer.close?.();
 ### Serial
 
 ```ts
-const printer = createPrinter({
+await print({
   type: "serial",
   path: "COM3",
   baudRate: 9600
-});
+}, receipt);
 ```
 
 ### Network
 
 ```ts
-const printer = createPrinter({
+await print({
   type: "network",
   host: "192.168.0.50",
   port: 9100,
@@ -96,32 +85,30 @@ const printer = createPrinter({
     maxDelayMs: 1000,
     factor: 2
   }
-});
+}, receipt);
 ```
 
 ### CUPS
 
 ```ts
-const printer = createPrinter({
+await print({
   type: "cups",
   printerName: "Receipt",
   documentName: "Receipt"
-});
+}, receipt);
 ```
 
 ### Windows Spooler
 
 ```ts
-const printer = createPrinter({
+await print({
   type: "winspool",
   printerName: "Receipt",
   documentName: "Receipt"
-});
+}, receipt);
 ```
 
 Winspool은 Windows에서만 사용할 수 있습니다
-
-
 
 ## 영수증 Builder
 
@@ -145,8 +132,6 @@ const receipt = createReceipt({ width: 48, encoding: "cp949" })
 
 지원하는 builder command는 text, row, align, bold, underline, size, feed, cut, QR, barcode, image, raw bytes입니다
 
-
-
 ## 플랫폼 지원
 
 
@@ -159,7 +144,79 @@ const receipt = createReceipt({ width: 48, encoding: "cp949" })
 
 Windows가 아닌 플랫폼에서 winspool target을 호출하면 `ERR_UNSUPPORTED_PLATFORM`이 throw됩니다
 
+## 프린터 조회
 
+```ts
+import { listPrinters } from "@maxxuxx/node-printer";
+
+const serialPorts = await listPrinters("serial");
+const usbPrinters = await listPrinters("usb");
+const networkPrinters = await listPrinters("network");
+```
+
+## Electron bridge
+
+Electron preload에서 설정 파일 경로를 등록하고 기존 bridge에 printer API를 합칠 수 있습니다
+
+`printersJsonPath`는 Electron main 쪽에서 `app.getPath("userData")` 아래 경로로 준비하는 것을 권장합니다
+
+```ts
+import { contextBridge } from "electron";
+import {
+  configurePrinterSettings,
+  createPrinterBridge
+} from "@maxxuxx/node-printer";
+
+configurePrinterSettings({ filePath: printersJsonPath });
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  printer: createPrinterBridge()
+});
+```
+
+웹에서는 실제 프린터를 조회하고 사용할 프린터를 저장합니다
+
+```ts
+const printers = await window.electronAPI.printer.listPrinters("usb");
+const saved = await window.electronAPI.printer.savePrinter({
+  name: "카운터",
+  type: "usb",
+  printerName: printers[0].name,
+  receipt: {
+    encoding: "cp949",
+    paperWidth: 80,
+    charsPerLine: 48
+  }
+});
+```
+
+저장된 프린터 id로 영수증을 만들고 출력합니다
+
+```ts
+await window.electronAPI.printer
+  .createReceipt(saved.id)
+  .initialize()
+  .text("테스트 출력")
+  .divider()
+  .text("합계 4,500")
+  .feed(3)
+  .cut()
+  .print({ copies: 2 });
+```
+
+여러 프린터에 같은 영수증을 보낼 때는 id 배열을 사용합니다
+
+```ts
+await window.electronAPI.printer
+  .createReceipt([counterId, kitchenId])
+  .text("테스트 출력")
+  .cut()
+  .print();
+```
+
+`exposePrinterBridge(contextBridge)`를 쓰면 기본 이름인 `window.nodePrinter`로 노출됩니다
+
+외부 웹 페이지에 bridge를 노출하면 프린터 권한도 함께 노출되므로 신뢰할 수 있는 URL에만 연결해야 합니다
 
 ## Prebuild
 
@@ -173,8 +230,6 @@ Windows에서 일반 설치는 bundled winspool prebuild를 사용합니다
 | bundled winspool prebuild  | ✅ 권장  | 앱 설치와 일반 패키지 사용           |
 | repository 직접 빌드           | ✅ 가능  | native 검증과 prebuild 갱신    |
 | npm install 중 source build | ❌ 미제공 | OS별 설치 예측 가능성을 위해 제공하지 않음 |
-
-
 
 
 ## 오류
@@ -195,31 +250,13 @@ try {
 
 대표 오류 코드는 `ERR_INVALID_TARGET`, `ERR_UNSUPPORTED_PLATFORM`, `ERR_CONNECTION_TIMEOUT`, `ERR_WRITE_TIMEOUT`, `ERR_NATIVE_MODULE_UNAVAILABLE`와 transport-specific failure code입니다
 
-
-
-## 내부 모듈
-
-npm에는 `@maxxuxx/node-printer`만 배포합니다
-
-- `@node-printer/core`
-- `@node-printer/network`
-- `@node-printer/serial`
-- `@node-printer/cups`
-- `@node-printer/winspool`
-
-
-
 ## Contributors 환영
 
 버그 수정, 문서 개선, 플랫폼 검증, 프린터 테스트 기록 기여를 환영합니다
 
-
-
 ## Repository
 
 [https://github.com/maxxuxx/node-printer](https://github.com/maxxuxx/node-printer)
-
-
 
 ## License
 

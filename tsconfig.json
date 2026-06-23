@@ -3,13 +3,12 @@
   "compilerOptions": {
     "noEmit": true,
     "paths": {
-      "#core": ["./libs/core/src/index.ts"],
-      "#cups": ["./apps/cups/src/index.ts"],
-      "#network": ["./apps/network/src/index.ts"],
-      "#serial": ["./apps/serial/src/index.ts"],
-      "#winspool": ["./apps/winspool/src/index.ts"],
-      "@node-printer/core": ["./libs/core/src/index.ts"]
+      "#core": ["./apps/printer/src/core/index.ts"],
+      "#cups": ["./apps/printer/src/transports/cups/index.ts"],
+      "#network": ["./apps/printer/src/transports/network/index.ts"],
+      "#serial": ["./apps/printer/src/transports/serial/index.ts"],
+      "#winspool": ["./apps/printer/src/transports/winspool/index.ts"]
     }
   },
-  "include": ["apps/*/src/**/*.ts", "apps/*/test/**/*.ts", "libs/*/src/**/*.ts", "libs/*/test/**/*.ts"]
+  "include": ["apps/printer/src/**/*.ts", "apps/printer/test/**/*.ts"]
 }

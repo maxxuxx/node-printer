@@ -1,6 +1,6 @@
 {
   "name": "@maxxuxx/node-printer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Unified entry point for ESC/POS receipt printer transports (serial, network, CUPS, Windows Spooler)",
   "license": "MIT",
   "homepage": "https://github.com/maxxuxx/node-printer#readme",
@@ -46,12 +46,19 @@
     "access": "public"
   },
   "scripts": {
-    "build": "node scripts/sync-prebuilds.cjs && tsup --config tsup.config.ts",
+    "build": "tsup --config tsup.config.ts",
     "lint": "eslint src test --max-warnings=0",
+    "pack:check": "npm run prebuild:check && pnpm pack --dry-run",
+    "prebuild:all": "npm run prebuild:x64 && npm run prebuild:ia32 && npm run prebuild:arm64",
+    "prebuild:arm64": "node scripts/prebuild-winspool.cjs arm64",
+    "prebuild:check": "node -e \"const { readdirSync } = require('node:fs'); const missing = ['win32-x64','win32-ia32','win32-arm64'].filter((arch) => { try { return !readdirSync('prebuilds/' + arch).some((file) => file.endsWith('.node')); } catch { return true; } }).map((arch) => 'prebuilds/' + arch + '/*.node'); if (missing.length) { console.error('Missing winspool prebuilds:\\n' + missing.join('\\n')); process.exit(1); }\"",
+    "prebuild:ia32": "node scripts/prebuild-winspool.cjs ia32",
+    "prebuild:x64": "node scripts/prebuild-winspool.cjs x64",
     "prepublishOnly": "npm run build",
     "test": "vitest run --config ../../vitest.config.ts"
   },
   "dependencies": {
-    "iconv-lite": "^0.7.0"
+    "iconv-lite": "^0.7.0",
+    "serialport": "^13.0.0"
   }
 }

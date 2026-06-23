@@ -2,7 +2,7 @@
 
 [Korean](winspool-napi-design.md)
 
-`@node-printer/winspool` is a Windows-only private native module
+`apps/printer/src/transports/winspool` is a Windows-only private native module
 
 The goal is to implement Windows Spooler RAW printing and printer discovery directly, while keeping top-level `@maxxuxx/node-printer` installs from failing on non-Windows platforms
 
@@ -57,9 +57,9 @@ apps/
 Recommended dependency direction
 
 ```text
-@node-printer/core
+apps/printer/src/core
   ↑
-@node-printer/winspool
+apps/printer/src/transports/winspool
 ```
 
 The top-level `@maxxuxx/node-printer` package loads winspool behind a Windows platform guard
@@ -101,7 +101,7 @@ The module TypeScript API stays small and transport-focused
 The native addon exports `listPrinters` and `getDefaultPrinter` at the binding layer, but the public package entry points are the functions below
 
 ```ts
-import type { WinspoolPrinterTarget } from "@node-printer/core";
+import type { WinspoolPrinterTarget } from "apps/printer/src/core";
 
 export interface WinspoolPrinterInfo {
   name: string;
@@ -254,7 +254,7 @@ Hardware testing is manual or runs on a separate self-hosted Windows machine
 
 ## Initial implementation steps
 
-1. `apps/winspool` scaffold
+1. `apps/printer/src/transports/winspool` scaffold
 2. N-API addon build wiring
 3. Unsupported platform JavaScript fallback
 4. `listPrinters` native binding
@@ -266,7 +266,7 @@ Hardware testing is manual or runs on a separate self-hosted Windows machine
 
 ## Current native status
 
-- The `apps/winspool` scaffold exists
+- The `apps/printer/src/transports/winspool` scaffold exists
 - The TypeScript wrapper exposes `listWinspoolPrinters`, `getDefaultWinspoolPrinter`, `printRaw`, and `createWinspoolPrinter`
 - Non-Windows calls fail with `ERR_UNSUPPORTED_PLATFORM`
 - `scripts/prebuild.cjs` builds `native/src/winspool.cc` with C++17

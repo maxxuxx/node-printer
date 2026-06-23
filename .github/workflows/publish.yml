@@ -8,13 +8,13 @@ on:
       - main
     types:
       - completed
-  workflow_dispatch:
 
 jobs:
   publish:
-    if: github.repository == 'maxxuxx/node-printer' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    if: github.repository == 'maxxuxx/node-printer' && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
       id-token: write
 
@@ -36,6 +36,30 @@ jobs:
 
       - name: Install
         run: corepack pnpm install --frozen-lockfile
+
+      - name: Download x64 prebuild
+        uses: actions/download-artifact@v4
+        with:
+          name: winspool-prebuild-win32-x64
+          path: apps/printer/prebuilds/win32-x64
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download ia32 prebuild
+        uses: actions/download-artifact@v4
+        with:
+          name: winspool-prebuild-win32-ia32
+          path: apps/printer/prebuilds/win32-ia32
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download arm64 prebuild
+        uses: actions/download-artifact@v4
+        with:
+          name: winspool-prebuild-win32-arm64
+          path: apps/printer/prebuilds/win32-arm64
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify
         run: corepack pnpm run verify

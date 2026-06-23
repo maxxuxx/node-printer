@@ -14,7 +14,7 @@ The server imports `apps/printer/dist/index.js` directly, so build the repositor
 | Server       | Node HTTP server                       |
 | UI           | Svelte, Vite                           |
 | Printer API  | Local `@maxxuxx/node-printer` build    |
-| Test targets | Serial, Network, CUPS, Windows Spooler |
+| Test targets | Serial, USB, Network                   |
 
 ## Quick Run
 
@@ -39,9 +39,8 @@ Open `http://localhost:3007` in a browser
 | ----------------------- | ------------ | -------------------------------------- |
 | Health check            | ✅ Available | Checks build output and capabilities   |
 | Serial printer list     | ✅ Available | Uses local serial transport            |
-| Network printer presets | ✅ Available | Reads environment variable presets     |
-| CUPS printer list       | ✅ Available | Works on macOS and Linux with `lpstat` |
-| Winspool printer list   | ✅ Available | Works on Windows Node                  |
+| USB printer list        | ✅ Available | Uses CUPS on macOS or Linux, Winspool on Windows |
+| Network printer scan    | ✅ Available | Scans the local IPv4 subnet for port 9100 |
 | Winspool from WSL       | ❌ Not used  | Windows Spooler is not available there |
 
 ## Run Options
@@ -53,22 +52,10 @@ $env:PORT=3010
 npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 ```
 
-Set network printer presets with `PRINTER_NETWORK_TARGETS`
-
-```powershell
-$env:PRINTER_NETWORK_TARGETS='192.168.0.50:9100,192.168.0.51:9100'
-```
-
-Use a JSON array when names and defaults are needed
-
-```powershell
-$env:PRINTER_NETWORK_TARGETS='[{"id":"store","name":"Store receipt","host":"192.168.0.50","port":9100,"isDefault":true}]'
-```
-
 ## UI Features
 
 - Server health and transport capability checks
-- Serial, Network, CUPS, and Winspool target discovery
+- Serial, USB, and Network target discovery
 - Receipt lines, encoding, width, divider, feed, cut, and copies controls
 - QR, barcode, and image example data
 - Encoded hex and bytes preview
@@ -81,9 +68,8 @@ $env:PRINTER_NETWORK_TARGETS='[{"id":"store","name":"Store receipt","host":"192.
 | `GET`  | `/api/health`            | Check build output and capability status |
 | `GET`  | `/api/capabilities`      | Check transport availability             |
 | `GET`  | `/api/serial/ports`      | List serial ports                        |
-| `GET`  | `/api/network/printers`  | List network presets from environment    |
-| `GET`  | `/api/cups/printers`     | List CUPS printers                       |
-| `GET`  | `/api/winspool/printers` | List Windows Spooler printers            |
+| `GET`  | `/api/usb/printers`      | List OS registered USB printers          |
+| `GET`  | `/api/network/printers`  | Scan local IPv4 subnet for network printers |
 | `POST` | `/api/receipt/encode`    | Encode receipt input into ESC/POS bytes  |
 | `POST` | `/api/print`             | Print a receipt to the selected target   |
 
@@ -174,7 +160,7 @@ Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/print -ContentType
 }'
 ```
 
-CUPS and Winspool use the same `/api/print` endpoint
+USB print uses the same `/api/print` endpoint with the OS transport target
 
 ```text
 { "type": "cups", "printerName": "Receipt" }
@@ -187,8 +173,8 @@ CUPS and Winspool use the same `/api/print` endpoint
 
 ## Platform Notes
 
-- CUPS printer discovery works on macOS or Linux when `lpstat` is available
-- Winspool discovery and printing work only from Windows Node
+- USB printer discovery uses CUPS on macOS or Linux and Winspool on Windows
+- Network discovery scans the local IPv4 `/24` subnet on port 9100
 - WSL cannot use Winspool and only receives enhanced Windows COM port candidates for serial
 - Missing Windows winspool prebuilds are shown as `prebuild_required`
 

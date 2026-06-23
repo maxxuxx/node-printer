@@ -3,13 +3,13 @@
 /* 전역 토큰 */
 :root {
   color-scheme: light;
-  --bg: #f5f7fb;
+  --bg: #f3f5f8;
   --panel: #ffffff;
-  --text: #191f2c;
-  --muted: #667085;
-  --line: #e4e8f0;
+  --text: #172033;
+  --muted: #667084;
+  --line: #dbe2ea;
   --field: #f8fafc;
-  --field-strong: #f1f5f9;
+  --field-strong: #eef3f8;
   --accent: #2563eb;
   --accent-dark: #1d4ed8;
   --ok: #15803d;
@@ -40,13 +40,14 @@ textarea {
 }
 
 button {
-  min-height: 42px;
+  min-height: 38px;
   padding: 0 16px;
   color: #ffffff;
   background: var(--accent);
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -76,17 +77,18 @@ textarea {
   color: var(--text);
   background: var(--field);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 8px;
+  font-size: 14px;
 }
 
 input,
 select {
-  min-height: 42px;
+  min-height: 40px;
   padding: 0 12px;
 }
 
 textarea {
-  min-height: 96px;
+  min-height: 86px;
   padding: 12px;
   resize: vertical;
   line-height: 1.5;
@@ -129,7 +131,7 @@ small {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 22px 24px;
+  padding: 16px 24px;
   background: #ffffff;
   border-bottom: 1px solid var(--line);
 }
@@ -205,29 +207,37 @@ small {
 /* 공통 패널과 폼 레이아웃 */
 .page-shell {
   display: grid;
-  grid-template-columns: minmax(360px, 1.05fr) minmax(420px, 1fr) minmax(320px, 0.75fr);
+  grid-template-columns: minmax(390px, 0.95fr) minmax(500px, 1.15fr) minmax(320px, 0.72fr);
+  align-items: start;
   gap: 16px;
-  max-width: 1540px;
+  max-width: 1640px;
   margin: 0 auto;
   padding: 16px;
 }
 
 .panel {
   min-width: 0;
+  max-height: calc(100vh - 106px);
+  overflow: auto;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 18px;
-  box-shadow: 0 8px 26px rgb(15 23 42 / 0.05);
-  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
+  scrollbar-gutter: stable;
 }
 
 .panel-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 18px;
+  padding: 16px;
+  background: rgb(255 255 255 / 0.96);
   border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
 }
 
 .panel-head.stacked {
@@ -240,8 +250,8 @@ small {
 .target-tab,
 .output-grid {
   display: grid;
-  gap: 14px;
-  padding: 18px;
+  gap: 12px;
+  padding: 16px;
 }
 
 .example-stack {
@@ -249,8 +259,14 @@ small {
 }
 
 .output-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   padding-top: 0;
+}
+
+.quick-output {
+  background: #fbfcfe;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .field {
@@ -259,6 +275,10 @@ small {
   color: var(--muted);
   font-size: 13px;
   font-weight: 700;
+}
+
+.wide-field {
+  grid-column: 1 / -1;
 }
 
 .short-field {
@@ -302,21 +322,111 @@ small {
   padding: 0 12px;
   background: var(--field);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .example-group {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
   margin: 0;
-  padding: 16px;
+  padding: 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 8px;
 }
 
 .example-group legend {
   padding: 0 6px;
+}
+
+.receipt-option-nav {
+  position: sticky;
+  top: 71px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 12px 16px;
+  background: rgb(255 255 255 / 0.96);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+
+.receipt-option-nav button {
+  min-height: 36px;
+  color: var(--muted);
+  background: var(--field-strong);
+  border: 1px solid transparent;
+}
+
+.receipt-option-nav button:hover,
+.receipt-option-nav button.active {
+  color: var(--accent);
+  background: #ffffff;
+  border-color: rgb(37 99 235 / 0.28);
+}
+
+.option-stack {
+  padding-top: 16px;
+}
+
+.group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 4px;
+}
+
+.group-head span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.option-split {
+  display: grid;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.option-split:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.quick-output textarea {
+  min-height: 118px;
+  background: #ffffff;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
+
+.quick-output .wide-field textarea {
+  min-height: 132px;
+}
+
+.encoded-details {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.encoded-details summary {
+  min-height: 36px;
+  padding: 9px 12px;
+  color: var(--text);
+  background: var(--field-strong);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.encoded-grid {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
 }
 
 /* 출력 대상 탭 영역 */
@@ -334,14 +444,14 @@ small {
   gap: 6px;
   padding: 4px;
   background: var(--field-strong);
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .tab-list button {
   min-height: 38px;
   color: var(--muted);
   background: transparent;
-  border-radius: 9px;
+  border-radius: 6px;
 }
 
 .tab-list button:hover,
@@ -375,7 +485,6 @@ small {
 .log-panel {
   display: flex;
   flex-direction: column;
-  min-height: 640px;
 }
 
 .log-list {
@@ -400,7 +509,7 @@ small {
   text-align: left;
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 8px;
 }
 
 .log-item:hover {
@@ -438,7 +547,7 @@ small {
   color: var(--muted);
   text-align: center;
   background: var(--field);
-  border-radius: 14px;
+  border-radius: 8px;
   font-size: 14px;
 }
 
@@ -449,7 +558,7 @@ small {
   color: var(--text);
   background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: 18px;
+  border-radius: 8px;
 }
 
 .log-dialog::backdrop {
@@ -513,6 +622,7 @@ small {
   .inline-grid.two,
   .inline-grid.three,
   .output-grid,
+  .receipt-option-nav,
   .tab-list {
     grid-template-columns: 1fr;
   }

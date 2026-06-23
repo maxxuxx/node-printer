@@ -30,7 +30,7 @@ npm install @maxxuxx/node-printer
 | Feature                    | Status       | Notes                                       |
 | -------------------------- | ------------ | ------------------------------------------- |
 | Network TCP 9100           | ✅ Available | Works on Windows, macOS, and Linux          |
-| Serial COM or tty          | ✅ Available | Uses OS COM or tty devices                  |
+| Serial COM or tty          | ✅ Available | Uses serialport over OS COM or tty devices  |
 | CUPS printing              | ✅ Available | Works on macOS and Linux                    |
 | Windows Spooler RAW        | ✅ Available | Works on Windows with bundled prebuilds     |
 | Winspool on macOS or Linux | ❌ Not used  | Throws `ERR_UNSUPPORTED_PLATFORM`           |
@@ -39,7 +39,7 @@ npm install @maxxuxx/node-printer
 ## Quick Start
 
 ```ts
-import { createPrinter, createReceipt } from "@maxxuxx/node-printer";
+import { createReceipt, print } from "@maxxuxx/node-printer";
 
 const receipt = createReceipt({ encoding: "cp949" })
   .initialize()
@@ -50,14 +50,11 @@ const receipt = createReceipt({ encoding: "cp949" })
   .cut()
   .encode();
 
-const printer = createPrinter({
+await print({
   type: "network",
   host: "192.168.0.50",
   port: 9100
-});
-
-await printer.print(receipt);
-await printer.close?.();
+}, receipt);
 ```
 
 ## Choose a Printer
@@ -65,7 +62,7 @@ await printer.close?.();
 ### Network
 
 ```ts
-const printer = createPrinter({
+await print({
   type: "network",
   host: "192.168.0.50",
   port: 9100,
@@ -76,37 +73,37 @@ const printer = createPrinter({
     maxDelayMs: 1000,
     factor: 2
   }
-});
+}, receipt);
 ```
 
 ### Serial
 
 ```ts
-const printer = createPrinter({
+await print({
   type: "serial",
   path: "COM3",
   baudRate: 9600
-});
+}, receipt);
 ```
 
 ### CUPS
 
 ```ts
-const printer = createPrinter({
+await print({
   type: "cups",
   printerName: "Receipt",
   documentName: "Receipt"
-});
+}, receipt);
 ```
 
 ### Windows Spooler
 
 ```ts
-const printer = createPrinter({
+await print({
   type: "winspool",
   printerName: "Receipt",
   documentName: "Receipt"
-});
+}, receipt);
 ```
 
 Winspool is available only on Windows
@@ -145,6 +142,80 @@ Supported builder commands include text, rows, alignment, bold, underline, size,
 
 Calling a winspool target on a non-Windows platform throws `ERR_UNSUPPORTED_PLATFORM`
 
+## List Printers
+
+```ts
+import { listPrinters } from "@maxxuxx/node-printer";
+
+const serialPorts = await listPrinters("serial");
+const usbPrinters = await listPrinters("usb");
+const networkPrinters = await listPrinters("network");
+```
+
+## Electron bridge
+
+Register the settings file path from Electron and merge the printer API into an existing bridge
+
+Prepare `printersJsonPath` from Electron main under `app.getPath("userData")`
+
+```ts
+import { contextBridge } from "electron";
+import {
+  configurePrinterSettings,
+  createPrinterBridge
+} from "@maxxuxx/node-printer";
+
+configurePrinterSettings({ filePath: printersJsonPath });
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  printer: createPrinterBridge()
+});
+```
+
+The web page can discover real printers and save the printer profile used by the app
+
+```ts
+const printers = await window.electronAPI.printer.listPrinters("usb");
+const saved = await window.electronAPI.printer.savePrinter({
+  name: "Counter",
+  type: "usb",
+  printerName: printers[0].name,
+  receipt: {
+    encoding: "cp949",
+    paperWidth: 80,
+    charsPerLine: 48
+  }
+});
+```
+
+Build and print a receipt through the saved printer id
+
+```ts
+await window.electronAPI.printer
+  .createReceipt(saved.id)
+  .initialize()
+  .text("Test print")
+  .divider()
+  .text("Total 4,500")
+  .feed(3)
+  .cut()
+  .print({ copies: 2 });
+```
+
+Use an id list to send the same receipt commands to multiple printers
+
+```ts
+await window.electronAPI.printer
+  .createReceipt([counterId, kitchenId])
+  .text("Test print")
+  .cut()
+  .print();
+```
+
+`exposePrinterBridge(contextBridge)` is still available when you want the default `window.nodePrinter` name
+
+Only expose the bridge to trusted URLs because the page receives printer access through the bridge
+
 ## Prebuilds
 
 Normal installs use the bundled winspool prebuild when running on Windows
@@ -174,16 +245,6 @@ try {
 ```
 
 Common error codes include `ERR_INVALID_TARGET`, `ERR_UNSUPPORTED_PLATFORM`, `ERR_CONNECTION_TIMEOUT`, `ERR_WRITE_TIMEOUT`, `ERR_NATIVE_MODULE_UNAVAILABLE`, and transport-specific failure codes
-
-## Internal Modules
-
-Only `@maxxuxx/node-printer` is published to npm
-
-- `@node-printer/core`
-- `@node-printer/network`
-- `@node-printer/serial`
-- `@node-printer/cups`
-- `@node-printer/winspool`
 
 ## Contributors Welcome
 

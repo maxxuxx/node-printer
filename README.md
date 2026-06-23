@@ -45,7 +45,7 @@ npm install @maxxuxx/node-printer
 | Mode            | Support                 | Description                                      |
 | --------------- | ----------------------- | ------------------------------------------------ |
 | TCP(network)    | ✅ Supported             | Works on Windows, macOS, and Linux               |
-| Serial          | ✅ Supported             | Serial ports through OS COM or tty devices       |
+| Serial          | ✅ Supported             | Serial ports through serialport over COM or tty  |
 | CUPS            | ✅ Supported             | `lp`, `lpr`, and `lpstat` on macOS and Linux     |
 | Windows Spooler | ✅ Supported (Windows only) | Bundled N-API prebuilds on Windows          |
 
@@ -68,27 +68,27 @@ Korean receipts usually use `cp949`
 const receipt = createReceipt({ encoding: "cp949" }).text("테스트 출력").encode();
 ```
 
-## Workspace modules
+## Internal modules
 
-Only `@maxxuxx/node-printer` is published to npm. The other names are private internal aliases
+Only `@maxxuxx/node-printer` is published to npm. Core logic and transports are internal source modules inside `apps/printer`
 
 Legacy split packages named `@maxxuxx/node-printer-*` should be deprecated on npm and replaced by `@maxxuxx/node-printer`
 
 
-| Module                   | Purpose                                                           |
-| ------------------------ | ----------------------------------------------------------------- |
-| `@maxxuxx/node-printer`  | Published entry point with lazy-loaded transports                 |
-| `@node-printer/core`     | Shared types, errors, ESC/POS receipt builder, CP949 encoding     |
-| `@node-printer/network`  | TCP 9100 transport with timeout, retry, and chunked writes        |
-| `@node-printer/serial`   | Serial transport through OS COM or tty devices                    |
-| `@node-printer/cups`     | macOS and Linux system printers through `lp`, `lpr`, and `lpstat` |
-| `@node-printer/winspool` | Windows Spooler RAW transport with bundled N-API prebuilds        |
+| Module                              | Purpose                                                    |
+| ----------------------------------- | ---------------------------------------------------------- |
+| `apps/printer/src/api`              | Public method API dispatch for `print` and `listPrinters`  |
+| `apps/printer/src/core`             | Shared types, errors, ESC/POS receipt builder, CP949       |
+| `apps/printer/src/transports/serial` | serialport wrapper for COM or tty printing                 |
+| `apps/printer/src/transports/network` | TCP 9100 transport with timeout, retry, and chunked writes |
+| `apps/printer/src/transports/cups`  | macOS and Linux system printers through `lp`, `lpr`, `lpstat` |
+| `apps/printer/src/transports/winspool` | Windows Spooler RAW transport with bundled N-API prebuilds |
 
 
 ## Quick Start
 
 ```ts
-import { createPrinter, createReceipt } from "@maxxuxx/node-printer";
+import { createReceipt, print } from "@maxxuxx/node-printer";
 
 const receipt = createReceipt({ encoding: "cp949" })
   .initialize()
@@ -99,30 +99,101 @@ const receipt = createReceipt({ encoding: "cp949" })
   .cut()
   .encode();
 
-const printer = createPrinter({
+await print({
   type: "network",
   host: "192.168.0.50",
   port: 9100
-});
-
-await printer.print(receipt);
-await printer.close?.();
+}, receipt);
 ```
 
 Change `type` to switch printer paths
 
 ```ts
-createPrinter({ type: "serial", path: "COM3", baudRate: 9600 });
-createPrinter({ type: "cups", printerName: "Receipt" });
-createPrinter({ type: "winspool", printerName: "Receipt" });
+await print({ type: "serial", path: "COM3", baudRate: 9600 }, receipt);
+await print({ type: "cups", printerName: "Receipt" }, receipt);
+await print({ type: "winspool", printerName: "Receipt" }, receipt);
 ```
+
+List locally discoverable printers when the transport supports it
+
+```ts
+import { listPrinters } from "@maxxuxx/node-printer";
+
+const serialPorts = await listPrinters("serial");
+const usbPrinters = await listPrinters("usb");
+const networkPrinters = await listPrinters("network");
+```
+
+## Electron bridge
+
+Register the settings file path from Electron and merge the printer API into an existing bridge
+
+Prepare `printersJsonPath` from Electron main under `app.getPath("userData")`
+
+```ts
+import { contextBridge } from "electron";
+import {
+  configurePrinterSettings,
+  createPrinterBridge
+} from "@maxxuxx/node-printer";
+
+configurePrinterSettings({ filePath: printersJsonPath });
+
+contextBridge.exposeInMainWorld("electronAPI", {
+  printer: createPrinterBridge()
+});
+```
+
+The web page can discover real printers and save the printer profile used by the app
+
+```ts
+const printers = await window.electronAPI.printer.listPrinters("usb");
+const saved = await window.electronAPI.printer.savePrinter({
+  name: "Counter",
+  type: "usb",
+  printerName: printers[0].name,
+  receipt: {
+    encoding: "cp949",
+    paperWidth: 80,
+    charsPerLine: 48
+  }
+});
+```
+
+Build and print a receipt through the saved printer id
+
+```ts
+await window.electronAPI.printer
+  .createReceipt(saved.id)
+  .initialize()
+  .text("Test print")
+  .divider()
+  .text("Total 4,500")
+  .feed(3)
+  .cut()
+  .print({ copies: 2 });
+```
+
+Use an id list to send the same receipt commands to multiple printers
+
+```ts
+await window.electronAPI.printer
+  .createReceipt([counterId, kitchenId])
+  .text("Test print")
+  .cut()
+  .print();
+```
+
+`exposePrinterBridge(contextBridge)` is still available when you want the default `window.nodePrinter` name
+
+Only expose the bridge to trusted URLs because the page receives printer access through the bridge
 
 ## Prebuild
 
-The Windows Spooler package ships bundled N-API prebuilds
+The published package ships bundled Windows Spooler N-API prebuilds
 
 ```text
-apps/winspool/prebuilds/
+apps/printer/prebuilds/
   win32-x64/
   win32-ia32/
   win32-arm64/
@@ -141,9 +212,9 @@ Usually you can use the prebuilds shipped with the package as-is. When you need 
 To refresh winspool prebuilds manually, use Windows PowerShell with Visual Studio C++ Build Tools and Windows SDK installed
 
 ```powershell
-corepack pnpm --filter @node-printer/winspool... build
-corepack pnpm --filter @node-printer/winspool prebuild:all
-corepack pnpm --filter @node-printer/winspool pack:check
+corepack pnpm --filter @maxxuxx/node-printer build
+corepack pnpm --filter @maxxuxx/node-printer prebuild:all
+corepack pnpm --filter @maxxuxx/node-printer pack:check
 ```
 
 If you need to install Build Tools from scratch, you can use the following commands
@@ -165,9 +236,7 @@ corepack pnpm test
 corepack pnpm build
 ```
 
-Do not run `npm install` inside an individual workspace package
-
-This repository uses `workspace:*` dependencies, so installs must run from the repository root
+Run installs from the repository root so the single workspace package and test server use the same dependency graph
 
 ## Test server
 

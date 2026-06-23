@@ -14,7 +14,7 @@
 | Server      | Node HTTP server                       |
 | UI          | Svelte, Vite                           |
 | Printer API | 로컬 `@maxxuxx/node-printer` build     |
-| Test target | Serial, Network, CUPS, Windows Spooler |
+| Test target | Serial, USB, Network                   |
 
 ## 빠른 실행
 
@@ -39,9 +39,8 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 | ---------------------- | --------- | ---------------------------------------- |
 | Health check           | ✅ 가능   | 빌드 산출물과 capability 상태 확인       |
 | Serial printer list    | ✅ 가능   | 로컬 serial transport 사용               |
-| Network printer preset | ✅ 가능   | 환경 변수 preset 조회                    |
-| CUPS printer list      | ✅ 가능   | macOS와 Linux에서 `lpstat`이 있으면 동작 |
-| Winspool printer list  | ✅ 가능   | Windows Node에서 동작                    |
+| USB printer list       | ✅ 가능   | macOS와 Linux는 CUPS, Windows는 Winspool 사용 |
+| Network printer scan   | ✅ 가능   | 로컬 IPv4 대역의 9100 포트 스캔          |
 | WSL Winspool           | ❌ 불가능 | Windows Spooler를 사용할 수 없음         |
 
 ## 실행 옵션
@@ -53,22 +52,10 @@ $env:PORT=3010
 npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 ```
 
-네트워크 프린터 preset은 `PRINTER_NETWORK_TARGETS` 환경 변수로 지정합니다
-
-```powershell
-$env:PRINTER_NETWORK_TARGETS='192.168.0.50:9100,192.168.0.51:9100'
-```
-
-이름과 기본 선택값이 필요하면 JSON 배열을 사용합니다
-
-```powershell
-$env:PRINTER_NETWORK_TARGETS='[{"id":"store","name":"Store receipt","host":"192.168.0.50","port":9100,"isDefault":true}]'
-```
-
 ## UI 기능
 
 - 서버 health와 transport capability 확인
-- Serial, Network, CUPS, Winspool 대상 목록 조회
+- Serial, USB, Network 대상 목록 조회
 - 영수증 본문, 인코딩, 폭, 구분선, feed, cut, 출력 매수 설정
 - QR, barcode, image 예제 데이터 포함
 - 인코딩 결과 hex와 bytes 확인
@@ -81,9 +68,8 @@ $env:PRINTER_NETWORK_TARGETS='[{"id":"store","name":"Store receipt","host":"192.
 | `GET`  | `/api/health`            | 빌드 산출물과 capability 상태 확인     |
 | `GET`  | `/api/capabilities`      | transport별 사용 가능 상태 확인        |
 | `GET`  | `/api/serial/ports`      | serial 포트 목록 조회                  |
-| `GET`  | `/api/network/printers`  | 환경 변수로 지정한 network preset 조회 |
-| `GET`  | `/api/cups/printers`     | CUPS 프린터 목록 조회                  |
-| `GET`  | `/api/winspool/printers` | Windows Spooler 프린터 목록 조회       |
+| `GET`  | `/api/usb/printers`      | OS에 등록된 USB 프린터 목록 조회       |
+| `GET`  | `/api/network/printers`  | 로컬 IPv4 대역의 network 프린터 스캔   |
 | `POST` | `/api/receipt/encode`    | 영수증 입력을 ESC/POS bytes로 인코딩   |
 | `POST` | `/api/print`             | 선택한 target으로 영수증 출력          |
 
@@ -174,7 +160,7 @@ Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/print -ContentType
 }'
 ```
 
-CUPS와 Winspool도 같은 `/api/print`를 사용합니다
+USB 출력은 OS transport target으로 같은 `/api/print`를 사용합니다
 
 ```text
 { "type": "cups", "printerName": "Receipt" }
@@ -187,8 +173,8 @@ CUPS와 Winspool도 같은 `/api/print`를 사용합니다
 
 ## 플랫폼 주의사항
 
-- CUPS 목록 조회는 macOS 또는 Linux에서 `lpstat` 명령이 있을 때 동작
-- Winspool 목록 조회와 출력은 Windows Node에서만 동작
+- USB 목록 조회는 macOS 또는 Linux에서 CUPS, Windows에서 Winspool 사용
+- Network 목록 조회는 로컬 IPv4 `/24` 대역의 9100 포트 스캔
 - WSL에서 실행하면 Winspool은 사용할 수 없고 serial 목록에 Windows COM 포트 후보가 보강됨
 - Windows에서 winspool prebuild가 없으면 capability가 `prebuild_required`로 표시됨
 
