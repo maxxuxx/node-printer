@@ -121,6 +121,9 @@ jobs:
     name: Winspool package contents
     runs-on: windows-2022
     needs: prebuild-winspool
+    permissions:
+      actions: read
+      contents: read
 
     steps:
       - name: Checkout
@@ -140,23 +143,14 @@ jobs:
       - name: Build package
         run: corepack pnpm --filter @maxxuxx/node-printer build
 
-      - name: Download x64 prebuild
-        uses: actions/download-artifact@v4
-        with:
-          name: winspool-prebuild-win32-x64
-          path: apps/printer/prebuilds/win32-x64
-
-      - name: Download ia32 prebuild
-        uses: actions/download-artifact@v4
-        with:
-          name: winspool-prebuild-win32-ia32
-          path: apps/printer/prebuilds/win32-ia32
-
-      - name: Download arm64 prebuild
-        uses: actions/download-artifact@v4
-        with:
-          name: winspool-prebuild-win32-arm64
-          path: apps/printer/prebuilds/win32-arm64
+      - name: Download prebuild artifacts
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download ${{ github.run_id }} --name winspool-prebuild-win32-x64 --dir apps/printer/prebuilds/win32-x64
+          gh run download ${{ github.run_id }} --name winspool-prebuild-win32-ia32 --dir apps/printer/prebuilds/win32-ia32
+          gh run download ${{ github.run_id }} --name winspool-prebuild-win32-arm64 --dir apps/printer/prebuilds/win32-arm64
 
       - name: Check package contents
         run: corepack pnpm --filter @maxxuxx/node-printer pack:check

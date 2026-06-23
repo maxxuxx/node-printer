@@ -37,29 +37,13 @@ jobs:
       - name: Install
         run: corepack pnpm install --frozen-lockfile
 
-      - name: Download x64 prebuild
-        uses: actions/download-artifact@v4
-        with:
-          name: winspool-prebuild-win32-x64
-          path: apps/printer/prebuilds/win32-x64
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download ia32 prebuild
-        uses: actions/download-artifact@v4
-        with:
-          name: winspool-prebuild-win32-ia32
-          path: apps/printer/prebuilds/win32-ia32
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download arm64 prebuild
-        uses: actions/download-artifact@v4
-        with:
-          name: winspool-prebuild-win32-arm64
-          path: apps/printer/prebuilds/win32-arm64
-          run-id: ${{ github.event.workflow_run.id }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Download prebuild artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download ${{ github.event.workflow_run.id }} --name winspool-prebuild-win32-x64 --dir apps/printer/prebuilds/win32-x64
+          gh run download ${{ github.event.workflow_run.id }} --name winspool-prebuild-win32-ia32 --dir apps/printer/prebuilds/win32-ia32
+          gh run download ${{ github.event.workflow_run.id }} --name winspool-prebuild-win32-arm64 --dir apps/printer/prebuilds/win32-arm64
 
       - name: Verify
         run: corepack pnpm run verify
