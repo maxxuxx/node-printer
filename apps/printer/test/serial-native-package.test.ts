@@ -18,15 +18,20 @@ describe("serial native package", () => {
     expect(packageJson.dependencies).toHaveProperty("@serialport/stream");
   });
 
-  it("ships serialport prebuilds for supported Windows architectures", () => {
-    const architectures = ["win32-x64", "win32-ia32", "win32-arm64"];
+  it("generates and checks native prebuilds during pack", async () => {
+    const packageJson = JSON.parse(
+      await readFile(resolve(packageRoot, "package.json"), "utf8")
+    ) as {
+      scripts?: Record<string, string>;
+    };
 
-    for (const architecture of architectures) {
-      expect(
-        existsSync(
-          resolve(packageRoot, "prebuilds", architecture, "@node-printer+serialport.node")
-        )
-      ).toBe(true);
-    }
+    expect(packageJson.scripts).toMatchObject({
+      "prebuild:check"     : "node scripts/check-prebuilds.cjs",
+      "prebuild:serialport": "node scripts/prebuild-serialport.cjs"
+    });
+    expect(packageJson.scripts?.prepack).toContain("prebuild:serialport");
+    expect(packageJson.scripts?.prepack).toContain("prebuild:check");
+    expect(existsSync(resolve(packageRoot, "scripts", "check-prebuilds.cjs"))).toBe(true);
+    expect(existsSync(resolve(packageRoot, "scripts", "prebuild-serialport.cjs"))).toBe(true);
   });
 });
