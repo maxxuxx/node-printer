@@ -24,6 +24,15 @@ describe("printer-winspool package root", () => {
     expect(resolveWinspoolPackageRoot(join(packageRoot, "dist")))
       .toBe(packageRoot);
   });
+
+  it("resolves the installed package root when winspool code is bundled elsewhere", () => {
+    const bundledOutputDir      = resolve(packageRoot, "..", "..", "electron-app", "out", "main");
+    const installedPackageEntry = resolve(packageRoot, "dist", "index.cjs");
+
+    expect(
+      resolveWinspoolPackageRoot(bundledOutputDir, () => installedPackageEntry)
+    ).toBe(packageRoot);
+  });
 });
 
 describeNonWindows("printer-winspool on non-Windows", () => {

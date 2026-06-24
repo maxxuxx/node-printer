@@ -348,16 +348,41 @@ function findSerialPrebuild(): string | null {
 }
 
 function getPackageRoot(): string {
-  return resolveSerialPackageRoot(dirname(fileURLToPath(import.meta.url)));
+  return resolveSerialPackageRoot(
+    dirname(fileURLToPath(import.meta.url)),
+    () => require.resolve("@maxxuxx/node-printer")
+  );
 }
 
-export function resolveSerialPackageRoot(currentDir: string): string {
-  const normalizedCurrentDir = currentDir.replace(/\\/g, "/");
-  const sourcePackageRoot    = resolve(currentDir, "..", "..", "..", "..");
+type PackageEntryResolver = () => string;
 
-  return normalizedCurrentDir.endsWith("/src/transports/serial/internal")
-    ? sourcePackageRoot
-    : resolve(currentDir, "..");
+export function resolveSerialPackageRoot(
+  currentDir: string,
+  resolvePackageEntry?: PackageEntryResolver
+): string {
+  if (isSourceSerialDirectory(currentDir)) {
+    return resolve(currentDir, "..", "..", "..", "..");
+  }
+
+  const installedPackageRoot = resolveInstalledPackageRoot(resolvePackageEntry);
+
+  return installedPackageRoot ?? resolve(currentDir, "..");
+}
+
+function resolveInstalledPackageRoot(resolvePackageEntry?: PackageEntryResolver): string | null {
+  if (!resolvePackageEntry) {
+    return null;
+  }
+
+  try {
+    return resolve(dirname(resolvePackageEntry()), "..");
+  } catch {
+    return null;
+  }
+}
+
+function isSourceSerialDirectory(currentDir: string): boolean {
+  return currentDir.replace(/\\/g, "/").endsWith("/src/transports/serial/internal");
 }
 
 function createAsyncBinding(binding: NativeSerialBinding): AsyncNativeBinding {

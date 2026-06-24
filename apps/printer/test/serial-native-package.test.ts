@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { resolveSerialPackageRoot } from "../src/transports/serial/internal/bundled-serialport.js";
+
 const packageRoot = resolve(import.meta.dirname, "..");
 
 describe("serial native package", () => {
@@ -33,5 +35,14 @@ describe("serial native package", () => {
     expect(packageJson.scripts?.prepack).toContain("prebuild:check");
     expect(existsSync(resolve(packageRoot, "scripts", "check-prebuilds.cjs"))).toBe(true);
     expect(existsSync(resolve(packageRoot, "scripts", "prebuild-serialport.cjs"))).toBe(true);
+  });
+
+  it("resolves the installed package root when serial code is bundled elsewhere", () => {
+    const bundledOutputDir      = resolve(packageRoot, "..", "..", "electron-app", "out", "main");
+    const installedPackageEntry = resolve(packageRoot, "dist", "index.cjs");
+
+    expect(
+      resolveSerialPackageRoot(bundledOutputDir, () => installedPackageEntry)
+    ).toBe(packageRoot);
   });
 });

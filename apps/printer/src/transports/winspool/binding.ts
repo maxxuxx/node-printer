@@ -81,14 +81,37 @@ function getPrebuildPriority(fileName: string): number {
 
 // ESM 파일 위치를 기준으로 패키지 루트를 계산함
 function getPackageRoot(): string {
-  return resolveWinspoolPackageRoot(dirname(fileURLToPath(import.meta.url)));
+  return resolveWinspoolPackageRoot(
+    dirname(fileURLToPath(import.meta.url)),
+    () => require.resolve("@maxxuxx/node-printer")
+  );
 }
 
-export function resolveWinspoolPackageRoot(currentDir: string): string {
-  const bundledPackageRoot = resolve(currentDir, "..");
-  const sourcePackageRoot  = resolve(currentDir, "..", "..", "..");
+type PackageEntryResolver = () => string;
 
-  return isSourceWinspoolDirectory(currentDir) ? sourcePackageRoot : bundledPackageRoot;
+export function resolveWinspoolPackageRoot(
+  currentDir: string,
+  resolvePackageEntry?: PackageEntryResolver
+): string {
+  if (isSourceWinspoolDirectory(currentDir)) {
+    return resolve(currentDir, "..", "..", "..");
+  }
+
+  const installedPackageRoot = resolveInstalledPackageRoot(resolvePackageEntry);
+
+  return installedPackageRoot ?? resolve(currentDir, "..");
+}
+
+function resolveInstalledPackageRoot(resolvePackageEntry?: PackageEntryResolver): string | null {
+  if (!resolvePackageEntry) {
+    return null;
+  }
+
+  try {
+    return resolve(dirname(resolvePackageEntry()), "..");
+  } catch {
+    return null;
+  }
 }
 
 function isSourceWinspoolDirectory(currentDir: string): boolean {
