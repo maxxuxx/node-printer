@@ -197,8 +197,10 @@ function buildNativeAddon(options) {
   const buildDir       = join(packageDir, "build", `win32-${options.arch}`);
   const outputDir      = join(packageDir, "prebuilds", `win32-${options.arch}`);
   const sourcePath     = join(packageDir, "native", "src", "winspool.cc");
+  const hookSourcePath = join(packageDir, "native", "src", "win_delay_load_hook.cc");
   const outputPath     = join(outputDir, "@node-printer+winspool.node");
   const objectPath     = join(buildDir, "winspool.obj");
+  const hookObjectPath = join(buildDir, "win_delay_load_hook.obj");
   const importLibPath  = join(buildDir, "winspool.lib");
   const commandPath    = join(buildDir, `build-${options.arch}.cmd`);
   const vcvarsArgument = VCVARS_ARCH[options.arch];
@@ -210,28 +212,51 @@ function buildNativeAddon(options) {
   const compileCommand = [
     "cl",
     "/nologo",
-    "/LD",
     "/EHsc",
     "/std:c++17",
     "/utf-8",
     "/DNAPI_VERSION=3",
     quoteArg(`/I${options.includeDir}`),
     quoteArg(`/Fo${objectPath}`),
-    quoteArg(sourcePath),
-    "/link",
+    "/c",
+    quoteArg(sourcePath)
+  ].join(" ");
+
+  const compileHookCommand = [
+    "cl",
+    "/nologo",
+    "/EHsc",
+    "/std:c++17",
+    "/utf-8",
+    quoteArg(`/I${options.includeDir}`),
+    quoteArg(`/Fo${hookObjectPath}`),
+    "/c",
+    quoteArg(hookSourcePath)
+  ].join(" ");
+
+  const linkCommand = [
+    "link",
     "/NOLOGO",
     "/DLL",
+    "/DELAYLOAD:node.exe",
     quoteArg(`/OUT:${outputPath}`),
     quoteArg(`/IMPLIB:${importLibPath}`),
+    quoteArg(objectPath),
+    quoteArg(hookObjectPath),
     quoteArg(options.nodeLibPath),
-    "Winspool.lib"
+    "Winspool.lib",
+    "delayimp.lib"
   ].join(" ");
 
   const commandLines = [
     "@echo off",
     `call ${quoteArg(options.vcvarsPath)} ${vcvarsArgument}`,
     "if errorlevel 1 exit /b %errorlevel%",
-    compileCommand
+    compileCommand,
+    "if errorlevel 1 exit /b %errorlevel%",
+    compileHookCommand,
+    "if errorlevel 1 exit /b %errorlevel%",
+    linkCommand
   ];
 
   writeFileSync(commandPath, `${commandLines.join("\r\n")}\r\n`);
