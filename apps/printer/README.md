@@ -30,7 +30,7 @@ npm install @maxxuxx/node-printer
 | Feature                    | Status       | Notes                                       |
 | -------------------------- | ------------ | ------------------------------------------- |
 | Network TCP 9100           | ✅ Available | Works on Windows, macOS, and Linux          |
-| Serial COM or tty          | ✅ Available | Uses serialport over OS COM or tty devices  |
+| Serial COM or tty          | ✅ Available | Works on Windows, macOS, and Linux with bundled prebuilds |
 | CUPS printing              | ✅ Available | Works on macOS and Linux                    |
 | Windows Spooler RAW        | ✅ Available | Works on Windows with bundled prebuilds     |
 | Winspool on macOS or Linux | ❌ Not used  | Throws `ERR_UNSUPPORTED_PLATFORM`           |
@@ -139,8 +139,11 @@ Supported builder commands include text, rows, alignment, bold, underline, size,
 | Windows  | ✅ Supported | ✅ Supported | ❌ No        | ✅ Supported |
 | macOS    | ✅ Supported | ✅ Supported | ✅ Supported | ❌ No        |
 | Linux    | ✅ Supported | ✅ Supported | ✅ Supported | ❌ No        |
+| Android  | ⚠️ Runtime dependent | ⚠️ Prebuild included | ❌ No | ❌ No |
 
 Calling a winspool target on a non-Windows platform throws `ERR_UNSUPPORTED_PLATFORM`
+
+Android serial arm and arm64 prebuilds are included, but Android runtime support is experimental because serial device access depends on the host Node environment and OS permissions
 
 ## List Printers
 
@@ -218,13 +221,16 @@ Only expose the bridge to trusted URLs because the page receives printer access 
 
 ## Prebuilds
 
+Normal installs use bundled serial prebuilds on Windows, macOS, Linux, and Android arm or arm64
+
 Normal installs use the bundled winspool prebuild when running on Windows
 
 Direct native builds are available in the repository for maintainers and contributors who need to validate or refresh prebuild artifacts
 
 | Path                        | Status          | When to use                                 |
 | --------------------------- | --------------- | ------------------------------------------- |
-| Bundled winspool prebuild   | ✅ Recommended  | App installs and normal package usage       |
+| Bundled serial prebuild     | ✅ Recommended  | App installs and normal package usage       |
+| Bundled winspool prebuild   | ✅ Recommended  | Windows spooler app installs                |
 | Direct repository build     | ✅ Available    | Native validation and prebuild refresh work |
 | Source build during install | ❌ Not provided | Keeps npm installs predictable across OSes  |
 

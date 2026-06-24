@@ -4,7 +4,11 @@ import { resolve } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { resolveSerialPackageRoot } from "../src/transports/serial/internal/bundled-serialport.js";
+import {
+  getSerialPlatformBindingKind,
+  getSerialPrebuildSearch,
+  resolveSerialPackageRoot
+} from "../src/transports/serial/internal/bundled-serialport.js";
 
 const packageRoot = resolve(import.meta.dirname, "..");
 
@@ -44,5 +48,37 @@ describe("serial native package", () => {
     expect(
       resolveSerialPackageRoot(bundledOutputDir, () => installedPackageEntry)
     ).toBe(packageRoot);
+  });
+
+  it("selects serial binding layers for Windows, macOS, Linux, and Android", () => {
+    expect(getSerialPlatformBindingKind("win32")).toBe("windows");
+    expect(getSerialPlatformBindingKind("darwin")).toBe("darwin");
+    expect(getSerialPlatformBindingKind("linux")).toBe("linux");
+    expect(getSerialPlatformBindingKind("android")).toBe("linux");
+  });
+
+  it("searches serial prebuilds by platform, architecture, and libc", () => {
+    expect(getSerialPrebuildSearch({ platform: "darwin", arch: "arm64" })).toEqual({
+      directories: ["darwin-arm64", "darwin-x64+arm64"],
+      fileNames  : ["@node-printer+serialport.node"]
+    });
+    expect(getSerialPrebuildSearch({ platform: "linux", arch: "x64", libc: "musl" })).toEqual({
+      directories: ["linux-x64"],
+      fileNames  : ["@node-printer+serialport.musl.node", "@node-printer+serialport.node"]
+    });
+    expect(getSerialPrebuildSearch({ platform: "android", arch: "arm64" })).toEqual({
+      directories: ["android-arm64"],
+      fileNames  : ["@node-printer+serialport.armv8.node", "@node-printer+serialport.node"]
+    });
+  });
+
+  it("packages serial prebuilds beyond Windows", async () => {
+    const copyScript = await readFile(resolve(packageRoot, "scripts", "prebuild-serialport.cjs"), "utf8");
+    const checkScript = await readFile(resolve(packageRoot, "scripts", "check-prebuilds.cjs"), "utf8");
+
+    expect(copyScript).toContain("readdirSync(serialportPrebuild");
+    expect(checkScript).toContain("darwin-x64+arm64");
+    expect(checkScript).toContain("linux-x64");
+    expect(checkScript).toContain("android-arm64");
   });
 });

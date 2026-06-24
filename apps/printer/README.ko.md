@@ -31,7 +31,7 @@ npm install @maxxuxx/node-printer
 | 기능                         | 상태    | 설명                               |
 | -------------------------- | ----- | -------------------------------- |
 | Network TCP 9100           | ✅ 가능  | Windows, macOS, Linux에서 사용 가능    |
-| Serial COM 또는 tty          | ✅ 가능  | serialport 기반 COM 또는 tty 사용      |
+| Serial COM 또는 tty          | ✅ 가능  | Windows, macOS, Linux에서 bundled prebuild로 동작 |
 | CUPS 출력                    | ✅ 가능  | macOS, Linux에서 사용 가능             |
 | Windows Spooler RAW        | ✅ 가능  | Windows에서 bundled prebuild로 동작   |
 | macOS 또는 Linux Winspool    | ❌ 불가능 | `ERR_UNSUPPORTED_PLATFORM` throw |
@@ -135,14 +135,17 @@ const receipt = createReceipt({ width: 48, encoding: "cp949" })
 ## 플랫폼 지원
 
 
-| 플랫폼     | Network | Serial | CUPS  | Winspool |
-| ------- | ------- | ------ | ----- | -------- |
-| Windows | ✅ 지원    | ✅ 지원   | ❌ 미지원 | ✅ 지원     |
-| macOS   | ✅ 지원    | ✅ 지원   | ✅ 지원  | ❌ 미지원    |
-| Linux   | ✅ 지원    | ✅ 지원   | ✅ 지원  | ❌ 미지원    |
+| 플랫폼     | Network      | Serial          | CUPS  | Winspool |
+| ------- | ------------ | --------------- | ----- | -------- |
+| Windows | ✅ 지원        | ✅ 지원           | ❌ 미지원 | ✅ 지원     |
+| macOS   | ✅ 지원        | ✅ 지원           | ✅ 지원  | ❌ 미지원    |
+| Linux   | ✅ 지원        | ✅ 지원           | ✅ 지원  | ❌ 미지원    |
+| Android | ⚠️ 런타임 의존 | ⚠️ prebuild 포함 | ❌ 미지원 | ❌ 미지원    |
 
 
 Windows가 아닌 플랫폼에서 winspool target을 호출하면 `ERR_UNSUPPORTED_PLATFORM`이 throw됩니다
+
+Android serial arm과 arm64 prebuild는 포함하지만, serial 장치 접근은 Node 런타임과 OS 권한에 따라 달라서 experimental로 봐야 합니다
 
 ## 프린터 조회
 
@@ -220,14 +223,17 @@ await window.electronAPI.printer
 
 ## Prebuild
 
-Windows에서 일반 설치는 bundled winspool prebuild를 사용합니다
+일반 설치는 Windows, macOS, Linux, Android arm 또는 arm64 serial prebuild를 사용합니다
+
+Windows에서는 bundled winspool prebuild도 함께 사용합니다
 
 관리자와 contributor가 prebuild artifact를 검증하거나 갱신해야 할 때는 저장소에서 native addon을 직접 빌드할 수 있습니다
 
 
 | 방식                         | 상태    | 사용 시점                     |
 | -------------------------- | ----- | ------------------------- |
-| bundled winspool prebuild  | ✅ 권장  | 앱 설치와 일반 패키지 사용           |
+| bundled serial prebuild    | ✅ 권장  | 앱 설치와 일반 패키지 사용           |
+| bundled winspool prebuild  | ✅ 권장  | Windows spooler 앱 설치          |
 | repository 직접 빌드           | ✅ 가능  | native 검증과 prebuild 갱신    |
 | npm install 중 source build | ❌ 미제공 | OS별 설치 예측 가능성을 위해 제공하지 않음 |
 
