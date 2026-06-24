@@ -1,15 +1,12 @@
-import { SerialPort as NodeSerialPort } from "serialport";
-
 import type { SerialPortConstructor, SerialPortInfo, SerialPrinterDependencies } from "../types.js";
-
-const DEFAULT_SERIAL_PORT = NodeSerialPort as unknown as SerialPortConstructor;
+import { getBundledSerialPortConstructor } from "./bundled-serialport.js";
 
 // Serialport binding resolution
 
 export function resolveSerialPortConstructor(
   dependencies: SerialPrinterDependencies = {}
 ): SerialPortConstructor {
-  return dependencies.SerialPort ?? DEFAULT_SERIAL_PORT;
+  return dependencies.SerialPort ?? getBundledSerialPortConstructor();
 }
 
 export async function listSerialPorts(

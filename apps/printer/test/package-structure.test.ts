@@ -22,9 +22,10 @@ describe("package structure", () => {
     expect(workspace).not.toContain("libs/core");
 
     expect(packageJson.dependencies).toMatchObject({
-      "iconv-lite": expect.any(String),
-      serialport  : expect.any(String)
+      "@serialport/stream": expect.any(String),
+      "iconv-lite"        : expect.any(String)
     });
+    expect(packageJson.dependencies).not.toHaveProperty("serialport");
     expect(Object.keys(packageJson.dependencies ?? {})).not.toContain("#core");
 
     expect(existsSync(join(rootDir, "apps", "printer", "src", "core"))).toBe(true);

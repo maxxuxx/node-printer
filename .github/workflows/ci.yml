@@ -103,18 +103,17 @@ jobs:
       - name: Check prebuild output
         shell: pwsh
         run: |
-          $path = "apps/printer/prebuilds/win32-${{ matrix.arch }}"
-          $files = Get-ChildItem $path -Filter "*.node" -File
+          $path = "apps/printer/prebuilds/win32-${{ matrix.arch }}/@node-printer+winspool.node"
 
-          if ($files.Count -eq 0) {
-            throw "Missing $path/*.node"
+          if (-not (Test-Path $path)) {
+            throw "Missing $path"
           }
 
       - name: Upload prebuild artifact
         uses: actions/upload-artifact@v4
         with:
           name: winspool-prebuild-win32-${{ matrix.arch }}
-          path: apps/printer/prebuilds/win32-${{ matrix.arch }}/*.node
+          path: apps/printer/prebuilds/win32-${{ matrix.arch }}/@node-printer+winspool.node
           if-no-files-found: error
 
   pack-winspool:
