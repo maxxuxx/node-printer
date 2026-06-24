@@ -11,10 +11,10 @@ The goal is to implement Windows Spooler RAW printing and printer discovery dire
 
 | Area           | Stack               |
 | -------------- | ------------------- |
-| Runtime        | Node.js 20+         |
+| Runtime        | Node.js 20+ and Electron Node runtimes |
 | Native API     | Windows Spooler API |
 | Native binding | N-API, C++17        |
-| Prebuild       | Visual Studio cl    |
+| Prebuild       | Visual Studio cl and link |
 | Package        | TypeScript, tsup    |
 
 
@@ -38,6 +38,7 @@ The goal is to implement Windows Spooler RAW printing and printer discovery dire
 - Expose a Promise-based JavaScript API
 - Prefer `node-addon-api` where practical
 - Generate prebuilt binaries with Visual Studio `cl` and `link`
+- Delay-load `node.exe` so the same addon can load under `node.exe` and `electron.exe`
 - Load bundled prebuilds from the npm package only
 - Do not provide an install-time source build fallback
 
@@ -51,7 +52,10 @@ The module is designed as a Windows-only private transport
 
 ```text
 apps/
-  winspool/
+  printer/
+    src/
+      transports/
+        winspool/
 ```
 
 Recommended dependency direction
@@ -180,13 +184,17 @@ Prebuild scripts follow this shape
 
 ```json
 {
-  "prebuild:x64": "node scripts/prebuild.cjs x64",
-  "prebuild:ia32": "node scripts/prebuild.cjs ia32",
-  "prebuild:arm64": "node scripts/prebuild.cjs arm64"
+  "prebuild:x64": "node scripts/prebuild-winspool.cjs x64",
+  "prebuild:ia32": "node scripts/prebuild-winspool.cjs ia32",
+  "prebuild:arm64": "node scripts/prebuild-winspool.cjs arm64"
 }
 ```
 
-The prebuild wrapper uses `vswhere` to locate Visual Studio C++ components, runs `vcvarsall.bat`, then calls `cl` and `link` directly
+The prebuild wrapper uses `vswhere` to locate Visual Studio C++ components, runs `vcvarsall.bat`, compiles `winspool.cc` and `win_delay_load_hook.cc`, then calls `link` directly
+
+The link step uses `/DELAYLOAD:node.exe` with `delayimp.lib`
+
+The delay-load hook returns the current process module handle for `node.exe`, which keeps the addon compatible with both `node.exe` and Electron runtimes
 
 ARM64 cross builds require both x64 host tools and ARM64 tools
 
@@ -214,6 +222,8 @@ There is no install script or source build fallback
 
 If no prebuild is available, runtime fails with `ERR_NATIVE_MODULE_UNAVAILABLE`
 
+The prebuild check fails if a Windows `.node` file imports `node.exe` directly instead of delay-loading it
+
 Initial targets are limited to these platforms
 
 
@@ -226,7 +236,16 @@ Initial targets are limited to these platforms
 | linux    | x64/arm64 | ❌ Not supported |
 
 
-Non-Windows platforms return `ERR_UNSUPPORTED_PLATFORM` on import or public API calls
+Non-Windows platforms return `ERR_UNSUPPORTED_PLATFORM` when winspool APIs are called
+
+## Runtime compatibility
+
+| Runtime                     | Support       | Notes                                      |
+| --------------------------- | ------------- | ------------------------------------------ |
+| Node.js CLI                 | ✅ Supported  | Uses the same N-API addon                  |
+| Electron main process       | ✅ Supported  | Works when native addons are allowed       |
+| Electron run-as-node worker | ✅ Supported  | Covered by the delay-loaded `node.exe` path |
+| Browser renderer            | ❌ Not supported | Use IPC or preload bridge instead       |
 
 ## Test strategy
 
@@ -269,7 +288,7 @@ Hardware testing is manual or runs on a separate self-hosted Windows machine
 - The `apps/printer/src/transports/winspool` scaffold exists
 - The TypeScript wrapper exposes `listWinspoolPrinters`, `getDefaultWinspoolPrinter`, `printRaw`, and `createWinspoolPrinter`
 - Non-Windows calls fail with `ERR_UNSUPPORTED_PLATFORM`
-- `scripts/prebuild.cjs` builds `native/src/winspool.cc` with C++17
+- `scripts/prebuild-winspool.cjs` builds `native/src/winspool.cc` and `native/src/win_delay_load_hook.cc` with C++17
 - The native binding implements `EnumPrintersW`, `GetDefaultPrinterW`, and the RAW `WritePrinter` flow
 - RAW printing runs through `napi_async_work` so Spooler writes do not block the Node event loop for long stretches
 - Native errors include `code`, `operation`, `win32Code`, and optional `printerName`

@@ -25,16 +25,28 @@ Transport packages are lazy-loaded so importing the package does not immediately
 npm install @maxxuxx/node-printer
 ```
 
+## Runtime Support
+
+| Runtime                         | Status          | Notes                                      |
+| ------------------------------- | --------------- | ------------------------------------------ |
+| Node.js CLI                     | ✅ Supported    | Node.js 20 or later                        |
+| Electron main process           | ✅ Supported    | Native addons load from the main process   |
+| Electron run-as-node worker     | ✅ Supported    | Windows winspool prebuilds support this from 1.3.1 |
+| Electron renderer direct import | ❌ Not recommended | Use preload or main IPC instead        |
+| Browser runtime                 | ❌ Not supported | Native `.node` addons cannot load there   |
+| Bun or Deno                     | ⚠️ Not guaranteed | Depends on `.node` addon compatibility  |
+| Android Node runtime            | ⚠️ Experimental | Prebuilds are included, permissions vary   |
+
 ## What Works
 
-| Feature                    | Status       | Notes                                       |
-| -------------------------- | ------------ | ------------------------------------------- |
-| Network TCP 9100           | ✅ Available | Works on Windows, macOS, and Linux          |
-| Serial COM or tty          | ✅ Available | Works on Windows, macOS, and Linux with bundled prebuilds |
-| CUPS printing              | ✅ Available | Works on macOS and Linux                    |
-| Windows Spooler RAW        | ✅ Available | Works on Windows with bundled prebuilds     |
-| Winspool on macOS or Linux | ❌ Not used  | Throws `ERR_UNSUPPORTED_PLATFORM`           |
-| npm source build fallback  | ❌ Not used  | Published installs expect bundled prebuilds |
+| Feature                       | Status       | Notes                                       |
+| ----------------------------- | ------------ | ------------------------------------------- |
+| Network TCP 9100              | ✅ Available | Works on Node runtimes with TCP socket access |
+| Serial COM or tty             | ✅ Available | Works on Windows, macOS, Linux, and Android prebuild targets |
+| CUPS printing                 | ✅ Available | Works on macOS and Linux                    |
+| Windows Spooler RAW           | ✅ Available | Works on Windows with bundled prebuilds     |
+| Winspool on non-Windows       | ❌ Not used  | Throws `ERR_UNSUPPORTED_PLATFORM`           |
+| npm source build fallback     | ❌ Not used  | Published installs expect bundled prebuilds |
 
 ## Quick Start
 
@@ -134,12 +146,14 @@ Supported builder commands include text, rows, alignment, bold, underline, size,
 
 ## Platform Support
 
-| Platform | Network      | Serial       | CUPS         | Winspool     |
-| -------- | ------------ | ------------ | ------------ | ------------ |
-| Windows  | ✅ Supported | ✅ Supported | ❌ No        | ✅ Supported |
-| macOS    | ✅ Supported | ✅ Supported | ✅ Supported | ❌ No        |
-| Linux    | ✅ Supported | ✅ Supported | ✅ Supported | ❌ No        |
-| Android  | ⚠️ Runtime dependent | ⚠️ Prebuild included | ❌ No | ❌ No |
+| Platform          | Network           | Serial                 | CUPS         | Winspool     |
+| ----------------- | ----------------- | ---------------------- | ------------ | ------------ |
+| Windows ia32      | ✅ Supported      | ✅ Supported           | ❌ No        | ✅ Supported |
+| Windows x64       | ✅ Supported      | ✅ Supported           | ❌ No        | ✅ Supported |
+| Windows arm64     | ✅ Supported      | ✅ Supported           | ❌ No        | ✅ Supported |
+| macOS x64/arm64   | ✅ Supported      | ✅ Supported           | ✅ Supported | ❌ No        |
+| Linux x64/arm64   | ✅ Supported      | ✅ Supported           | ✅ Supported | ❌ No        |
+| Android arm/arm64 | ⚠️ Runtime dependent | ⚠️ Experimental prebuilds | ❌ No | ❌ No |
 
 Calling a winspool target on a non-Windows platform throws `ERR_UNSUPPORTED_PLATFORM`
 
@@ -224,6 +238,8 @@ Only expose the bridge to trusted URLs because the page receives printer access 
 Normal installs use bundled serial prebuilds on Windows, macOS, Linux, and Android arm or arm64
 
 Normal installs use the bundled winspool prebuild when running on Windows
+
+Starting with `@maxxuxx/node-printer@1.3.1`, Windows winspool prebuilds delay-load `node.exe` so the same N-API addon can load under Node.js and Electron runtimes
 
 Direct native builds are available in the repository for maintainers and contributors who need to validate or refresh prebuild artifacts
 

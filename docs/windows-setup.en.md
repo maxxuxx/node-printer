@@ -203,9 +203,10 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm install
 When you need native artifacts, rebuild from the package directory
 
 ```powershell
-cd C:\Github\node-printer\apps\winspool
+cd C:\Github\node-printer\apps\printer
 npm run build
 npm run prebuild:all
+npm run pack:check
 ```
 
 Run the prebuild wrapper through package scripts

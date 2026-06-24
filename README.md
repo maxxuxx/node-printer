@@ -27,16 +27,29 @@ Most users should install the unified package
 npm install @maxxuxx/node-printer
 ```
 
+## Runtime support
+
+| Runtime                         | Status          | Notes                                      |
+| ------------------------------- | --------------- | ------------------------------------------ |
+| Node.js CLI                     | ✅ Supported    | Node.js 20 or later                        |
+| Electron main process           | ✅ Supported    | Native addons load from the main process   |
+| Electron run-as-node worker     | ✅ Supported    | Windows winspool prebuilds support this from 1.3.1 |
+| Electron renderer direct import | ❌ Not recommended | Use preload or main IPC instead        |
+| Browser runtime                 | ❌ Not supported | Native `.node` addons cannot load there   |
+| Bun or Deno                     | ⚠️ Not guaranteed | Depends on `.node` addon compatibility  |
+| Android Node runtime            | ⚠️ Experimental | Prebuilds are included, permissions vary   |
+
 ## Platform support
 
 
-| Platform        | Network | Serial | CUPS        | Winspool |
-| --------------- | ------- | ------ | ----------- | -------- |
-| Windows ia32    | ✅ Supported | ✅ Supported | ❌ Not supported | ✅ Supported |
-| Windows x64     | ✅ Supported | ✅ Supported | ❌ Not supported | ✅ Supported |
-| Windows arm64   | ✅ Supported | ✅ Supported | ❌ Not supported | ✅ Supported |
-| macOS x64/arm64 | ✅ Supported | ✅ Supported | ✅ Supported     | ❌ Not supported |
-| Linux x64/arm64 | ✅ Supported | ✅ Supported | ✅ Supported     | ❌ Not supported |
+| Platform          | Network           | Serial                 | CUPS            | Winspool        |
+| ----------------- | ----------------- | ---------------------- | --------------- | --------------- |
+| Windows ia32      | ✅ Supported      | ✅ Supported           | ❌ Not supported | ✅ Supported    |
+| Windows x64       | ✅ Supported      | ✅ Supported           | ❌ Not supported | ✅ Supported    |
+| Windows arm64     | ✅ Supported      | ✅ Supported           | ❌ Not supported | ✅ Supported    |
+| macOS x64/arm64   | ✅ Supported      | ✅ Supported           | ✅ Supported    | ❌ Not supported |
+| Linux x64/arm64   | ✅ Supported      | ✅ Supported           | ✅ Supported    | ❌ Not supported |
+| Android arm/arm64 | ⚠️ Runtime dependent | ⚠️ Experimental prebuilds | ❌ Not supported | ❌ Not supported |
 
 
 ## Connection modes
@@ -44,8 +57,8 @@ npm install @maxxuxx/node-printer
 
 | Mode            | Support                 | Description                                      |
 | --------------- | ----------------------- | ------------------------------------------------ |
-| TCP(network)    | ✅ Supported             | Works on Windows, macOS, and Linux               |
-| Serial          | ✅ Supported             | Serial ports through serialport over COM or tty  |
+| TCP(network)    | ✅ Supported             | Works on Node runtimes with TCP socket access    |
+| Serial          | ✅ Supported             | COM or tty printing with bundled prebuilds       |
 | CUPS            | ✅ Supported             | `lp`, `lpr`, and `lpstat` on macOS and Linux     |
 | Windows Spooler | ✅ Supported (Windows only) | Bundled N-API prebuilds on Windows          |
 
@@ -190,10 +203,16 @@ Only expose the bridge to trusted URLs because the page receives printer access 
 
 ## Prebuild
 
-The published package ships bundled Windows Spooler N-API prebuilds
+The published package ships bundled serial and Windows Spooler native prebuilds
 
 ```text
 apps/printer/prebuilds/
+  android-arm/
+  android-arm64/
+  darwin-x64+arm64/
+  linux-arm/
+  linux-arm64/
+  linux-x64/
   win32-x64/
   win32-ia32/
   win32-arm64/
@@ -201,12 +220,14 @@ apps/printer/prebuilds/
 
 Usually you can use the prebuilds shipped with the package as-is. When you need to validate or refresh native artifacts, build in this repository
 
+Starting with `@maxxuxx/node-printer@1.3.1`, Windows winspool prebuilds delay-load `node.exe` so the same N-API addon can load under Node.js and Electron runtimes
 
 | Approach                    | Status           | When to use                                      |
 | --------------------------- | ---------------- | ------------------------------------------------ |
-| Bundled winspool prebuild   | ✅ Recommended    | App installs and typical package usage           |
+| Bundled serial prebuild     | ✅ Recommended    | App installs and typical package usage           |
+| Bundled winspool prebuild   | ✅ Recommended    | Windows spooler app installs                     |
 | Direct repository build     | ✅ Available      | Native validation and refreshing prebuild output |
-| Source build during `npm i` | ❌ Not yet available | Planned for a later release                   |
+| Source build during `npm i` | ❌ Not provided   | Keeps npm installs predictable across OSes       |
 
 
 To refresh winspool prebuilds manually, use Windows PowerShell with Visual Studio C++ Build Tools and Windows SDK installed
