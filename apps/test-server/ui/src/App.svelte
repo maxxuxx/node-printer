@@ -69,20 +69,10 @@
     { id: "media", label: "Media" },
     { id: "device", label: "Device" }
   ];
-  const paperWidths     = {
-    "58mm": 32,
-    "76mm": 42,
-    "80mm": 48
-  };
   const receiptPreviewBaseSize    = 100;
   const receiptPreviewBaseWidth   = 420;
   const receiptPreviewTextPadding = 32;
   const receiptPreviewCharRatio   = 0.55;
-  const receiptPaperSizes         = {
-    "58mm": 58,
-    "76mm": 76,
-    "80mm": 80
-  };
   const eanLeftOddPatterns        = ["0001101", "0011001", "0010011", "0111101", "0100011", "0110001", "0101111", "0111011", "0110111", "0001011"];
   const eanLeftEvenPatterns       = ["0100111", "0110011", "0011011", "0100001", "0011101", "0111001", "0000101", "0010001", "0001001", "0010111"];
   const eanRightPatterns          = ["1110010", "1100110", "1101100", "1000010", "1011100", "1001110", "1010000", "1000100", "1001000", "1110100"];
@@ -104,7 +94,7 @@
       encode: "Encode",
       encoding: "Encoding",
       lines: "Lines",
-      width: "Width",
+      width: "Columns",
       feed: "Feed",
       divider: "Divider",
       cut: "Cut",
@@ -113,8 +103,7 @@
       media: "Media",
       device: "Device",
       layoutBuilder: "Layout builder",
-      layoutHint: "Paper, wrapping, dividers",
-      paper: "Paper",
+      layoutHint: "Columns, wrapping, dividers",
       title: "Title",
       section: "Section",
       titleText: "Title text",
@@ -227,14 +216,13 @@
       previewCashDrawer: "[cash drawer]",
       previewBeep: "[beep]",
       tipEncoding: "Text encoding used when bytes are generated",
-      tipWidth: "Characters per receipt line",
+      tipWidth: "Printable columns per receipt line",
       tipFeed: "Blank lines fed after content",
       tipDivider: "Adds a full-width separator after the base lines",
       tipCut: "Adds a paper cut command at the end",
-      tipPaper: "Applies a common character width for the selected paper size",
       tipTitle: "Centers the title line",
       tipSection: "Adds a section divider with text in the middle",
-      tipAutoWrap: "Wraps long text to the receipt width",
+      tipAutoWrap: "Wraps long text to the configured columns",
       tipTruncate: "Shortens long text with an ellipsis",
       tipBlank: "Adds empty lines inside the receipt",
       tipLeftRight: "Places a label on the left and value on the right",
@@ -266,7 +254,7 @@
       encode: "인코딩",
       encoding: "인코딩",
       lines: "기본 문구",
-      width: "줄 너비",
+      width: "컬럼",
       feed: "용지 밀기",
       divider: "구분선",
       cut: "커팅",
@@ -276,7 +264,6 @@
       device: "장치",
       layoutBuilder: "레이아웃 빌더",
       layoutHint: "용지, 줄바꿈, 구분선",
-      paper: "용지",
       title: "제목",
       section: "섹션",
       titleText: "제목 문구",
@@ -389,11 +376,10 @@
       previewCashDrawer: "[돈통 신호]",
       previewBeep: "[비프음]",
       tipEncoding: "바이트 생성 시 사용할 텍스트 인코딩입니다",
-      tipWidth: "영수증 한 줄에 들어가는 문자 수입니다",
+      tipWidth: "영수증 한 줄에 들어가는 출력 칸 수입니다",
       tipFeed: "내용 출력 후 용지를 몇 줄 밀지 정합니다",
       tipDivider: "기본 문구 뒤에 전체 너비 구분선을 추가합니다",
       tipCut: "마지막에 용지 커팅 명령을 추가합니다",
-      tipPaper: "용지 크기에 맞는 기본 문자 너비를 적용합니다",
       tipTitle: "제목 문구를 가운데 정렬합니다",
       tipSection: "문구가 들어간 섹션 구분선을 추가합니다",
       tipAutoWrap: "긴 문구를 영수증 너비에 맞게 자동 줄바꿈합니다",
@@ -449,12 +435,11 @@
   // 영수증 본문과 출력 옵션 상태
   let receiptLines     = "테스트 출력\nSERIAL OK";
   let encoding         = "cp949";
-  let receiptWidth     = 42;
+  let receiptColumns   = 42;
   let divider          = true;
   let feed             = 3;
   let cut              = true;
   let copies           = 1;
-  let paper            = "80mm";
   let codePageEnabled  = false;
   let codePage         = 21;
   let titleEnabled     = true;
@@ -462,7 +447,7 @@
   let sectionEnabled   = true;
   let sectionText      = "Order info";
   let wrapEnabled      = true;
-  let wrapTextValue    = "This memo is automatically wrapped by the configured receipt width";
+  let wrapTextValue    = "This memo is automatically wrapped by the configured columns";
   let wrapIndent       = 2;
   let truncateEnabled  = true;
   let truncateTextValue = "ABCDEFGHIJKLMN";
@@ -544,11 +529,10 @@
   $: livePreview = buildLivePreview(
     language,
     receiptLines,
-    receiptWidth,
+    receiptColumns,
     divider,
     feed,
     cut,
-    paper,
     codePageEnabled,
     titleEnabled,
     titleText,
@@ -633,13 +617,12 @@
     leftRightEnabled,
     leftRightLeft,
     leftRightRight,
-    paper,
     qrCorrection,
     qrData,
     qrEnabled,
     qrSize,
     receiptLines,
-    receiptWidth,
+    receiptColumns,
     sectionEnabled,
     sectionText,
     styleEnabled,
@@ -909,9 +892,7 @@
       feed    : Number(feed),
       cut,
       encoding,
-      paper,
-      charsPerLine: Number(receiptWidth),
-      width   : Number(receiptWidth)
+      columns : Number(receiptColumns)
     };
   }
 
@@ -986,7 +967,7 @@
         type   : "columns",
         wrap   : true,
         columns: [
-          { text: columnLeft, width: Math.max(1, Number(receiptWidth) - 12) },
+          { text: columnLeft, width: Math.max(1, Number(receiptColumns) - 12) },
           { text: columnRight, width: 12, align: "right" }
         ]
       });
@@ -997,7 +978,7 @@
         type   : "table",
         divider: true,
         columns: [
-          { title: "Name", width: Math.max(1, Number(receiptWidth) - 12) },
+          { title: "Name", width: Math.max(1, Number(receiptColumns) - 12) },
           { title: "Amount", width: 12, align: "right" }
         ],
         rows: [
@@ -1069,12 +1050,8 @@
     return blocks;
   }
 
-  function applyPaperWidth() {
-    receiptWidth = paperWidths[paper] ?? receiptWidth;
-  }
-
   function buildLivePreview() {
-    const width = getReceiptWidth();
+    const width = getReceiptColumns();
     const lines = [];
 
     for (const line of receiptLines.split(/\r?\n/).filter((value) => value.length > 0)) {
@@ -1199,18 +1176,13 @@
     return lines;
   }
 
-  function getReceiptWidth() {
-    return clampInteger(receiptWidth || paperWidths[paper], 1, 80);
-  }
-
-  function getReceiptPaperSize(value) {
-    return clampInteger(receiptPaperSizes[value] ?? 80, 1, receiptPreviewBaseSize);
+  function getReceiptColumns() {
+    return clampInteger(receiptColumns, 1, 80);
   }
 
   function getReceiptPreviewFontSize() {
-    const columns = getReceiptWidth();
-    const paperRatio = getReceiptPaperSize(paper) / receiptPreviewBaseSize;
-    const innerWidth = Math.max(1, receiptPreviewBaseWidth * paperRatio - receiptPreviewTextPadding);
+    const columns    = getReceiptColumns();
+    const innerWidth = Math.max(1, receiptPreviewBaseWidth - receiptPreviewTextPadding);
     const fontSize = innerWidth / Math.max(1, columns) / receiptPreviewCharRatio;
 
     return Math.max(6.5, Math.min(12, Math.floor(fontSize * 10) / 10));
@@ -2201,8 +2173,8 @@
             </label>
 
             <label class="field media-field" title={t("tipWidth")}>
-              <strong>width</strong>
-              <input bind:value={receiptWidth} type="number" min="1" max="80">
+              <strong>columns</strong>
+              <input bind:value={receiptColumns} type="number" min="1" max="80">
             </label>
           </div>
         </div>
@@ -2271,16 +2243,6 @@
           </div>
 
           <div class="method-list">
-            <label class="field method-row method-row-field" title={t("tipPaper")}>
-              <span>{t("paper")}</span>
-              <strong>paper</strong>
-              <select bind:value={paper} on:change={applyPaperWidth}>
-                <option value="58mm">58mm</option>
-                <option value="76mm">76mm</option>
-                <option value="80mm">80mm</option>
-              </select>
-            </label>
-
             <div class="method-row method-row-grid">
               <label class="method-toggle" title={t("tipTitle")}>
                 <input bind:checked={titleEnabled} type="checkbox">
@@ -2712,11 +2674,10 @@
       </div>
 
     <LivePreview
-      columns={getReceiptWidth()}
+      columns={getReceiptColumns()}
       {encodedReceipt}
       {livePreview}
       methodText={liveMethod}
-      {paper}
       previewFontSize={receiptPreviewFontSize}
       {t}
     />

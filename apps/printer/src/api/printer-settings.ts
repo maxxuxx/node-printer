@@ -23,8 +23,7 @@ export interface PrinterSettingsConfig {
 
 export interface ReceiptProfile {
   encoding: ReceiptEncoding;
-  paperWidth: number;
-  charsPerLine: number;
+  columns: number;
 }
 
 export interface SavedPrinter {
@@ -236,22 +235,17 @@ function normalizeReceiptProfile(receipt: ReceiptProfile): ReceiptProfile {
     throwInvalidSettings("Receipt encoding is required");
   }
 
-  if (!Number.isFinite(receipt.paperWidth) || receipt.paperWidth <= 0) {
-    throwInvalidSettings("Receipt paperWidth must be greater than 0");
-  }
-
   if (
-    !Number.isInteger(receipt.charsPerLine) ||
-    receipt.charsPerLine < 1 ||
-    receipt.charsPerLine > 255
+    !Number.isInteger(receipt.columns) ||
+    receipt.columns < 1 ||
+    receipt.columns > 255
   ) {
-    throwInvalidSettings("Receipt charsPerLine must be an integer between 1 and 255");
+    throwInvalidSettings("Receipt columns must be an integer between 1 and 255");
   }
 
   return {
-    encoding    : receipt.encoding,
-    paperWidth  : receipt.paperWidth,
-    charsPerLine: receipt.charsPerLine
+    encoding: receipt.encoding,
+    columns : receipt.columns
   };
 }
 

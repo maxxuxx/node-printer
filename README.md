@@ -167,8 +167,7 @@ const saved = await window.electronAPI.printer.savePrinter({
   printerName: printers[0].name,
   receipt: {
     encoding: "cp949",
-    paperWidth: 80,
-    charsPerLine: 48
+    columns: 42
   }
 });
 ```

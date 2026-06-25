@@ -24,7 +24,6 @@ export type ReceiptEncoding =
   | "windows-1256"
   | "windows-1257"
   | "windows-1258";
-export type ReceiptPaperSize  = "58mm" | "76mm" | "80mm";
 export type ReceiptFont       = "a" | "b";
 export type TextAlign         = "left" | "center" | "right";
 export type CutMode           = "full" | "partial";
@@ -43,9 +42,7 @@ export type BarcodeHriPosition = "none" | "above" | "below" | "both";
 export type ImageMode           = "normal" | "double-width" | "double-height" | "quad";
 
 export interface ReceiptOptions {
-  width?: number;
-  paper?: ReceiptPaperSize;
-  charsPerLine?: number;
+  columns?: number;
   encoding?: ReceiptEncoding;
 }
 

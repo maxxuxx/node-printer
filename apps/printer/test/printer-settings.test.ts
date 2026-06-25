@@ -27,9 +27,8 @@ describe("printer settings", () => {
       type       : "usb",
       printerName: "Receipt",
       receipt    : {
-        encoding    : "cp949",
-        paperWidth  : 80,
-        charsPerLine: 48
+        encoding: "cp949",
+        columns : 42
       }
     });
 
@@ -38,9 +37,8 @@ describe("printer settings", () => {
       name   : "Counter",
       type   : "usb",
       receipt: {
-        encoding    : "cp949",
-        paperWidth  : 80,
-        charsPerLine: 48
+        encoding: "cp949",
+        columns : 42
       }
     });
     expect(saved.target).toMatchObject(
@@ -64,9 +62,8 @@ describe("printer settings", () => {
       path    : "COM3",
       baudRate: 9600,
       receipt : {
-        encoding    : "cp949",
-        paperWidth  : 58,
-        charsPerLine: 32
+        encoding: "cp949",
+        columns : 32
       }
     });
     const network = await printer.savePrinter({
@@ -75,9 +72,8 @@ describe("printer settings", () => {
       host   : "192.168.0.50",
       port   : 9100,
       receipt: {
-        encoding    : "cp949",
-        paperWidth  : 80,
-        charsPerLine: 48
+        encoding: "cp949",
+        columns : 42
       }
     });
 

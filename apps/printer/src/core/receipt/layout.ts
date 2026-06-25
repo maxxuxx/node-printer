@@ -12,36 +12,36 @@ export function formatColumn(column: ReceiptColumn): string {
   const text = truncateText(column.text, column.width, "");
 
   if (column.align === "right") {
-    return text.padStart(column.width);
+    return `${" ".repeat(Math.max(0, column.width - measureTextWidth(text)))}${text}`;
   }
 
   if (column.align === "center") {
-    const remaining = column.width - text.length;
+    const remaining = column.width - measureTextWidth(text);
     const left      = Math.floor(remaining / 2);
     const right     = remaining - left;
 
     return `${" ".repeat(left)}${text}${" ".repeat(right)}`;
   }
 
-  return text.padEnd(column.width);
+  return `${text}${" ".repeat(Math.max(0, column.width - measureTextWidth(text)))}`;
 }
 
 export function formatText(value: string, width: number, align: TextAlign = "left"): string {
   const text = truncateText(value, width, "");
 
   if (align === "right") {
-    return text.padStart(width);
+    return `${" ".repeat(Math.max(0, width - measureTextWidth(text)))}${text}`;
   }
 
   if (align === "center") {
-    const remaining = width - charCount(text);
+    const remaining = width - measureTextWidth(text);
     const left      = Math.floor(remaining / 2);
     const right     = remaining - left;
 
     return `${" ".repeat(left)}${text}${" ".repeat(right)}`;
   }
 
-  return text.padEnd(width);
+  return `${text}${" ".repeat(Math.max(0, width - measureTextWidth(text)))}`;
 }
 
 export function formatDivider(width: number, options: string | ReceiptDividerOptions = "-"): string {
@@ -61,16 +61,14 @@ export function formatDivider(width: number, options: string | ReceiptDividerOpt
 export function truncateText(value: string, width: number, ellipsis = "..."): string {
   assertPositiveWidth(width, "Text width");
 
-  const chars = Array.from(value);
-
-  if (chars.length <= width) {
+  if (measureTextWidth(value) <= width) {
     return value;
   }
 
-  const suffix = Array.from(ellipsis).slice(0, width).join("");
-  const keep   = Math.max(0, width - charCount(suffix));
+  const suffix = takeColumns(ellipsis, width);
+  const keep   = Math.max(0, width - measureTextWidth(suffix));
 
-  return `${chars.slice(0, keep).join("")}${suffix}`;
+  return `${takeColumns(value, keep)}${suffix}`;
 }
 
 export function wrapText(
@@ -100,8 +98,8 @@ export function formatAmount(value: number, options: ReceiptAmountFormatOptions 
   return `${formatted}${options.unit ?? ""}`;
 }
 
-export function charCount(value: string): number {
-  return Array.from(value).length;
+export function measureTextWidth(value: string): number {
+  return Array.from(value).reduce((width, char) => width + charColumnWidth(char), 0);
 }
 
 function wrapParagraph(
@@ -125,7 +123,7 @@ function wrapParagraph(
     const limit  = Math.max(1, width - indent);
 
     if (!current) {
-      if (charCount(word) > limit && breakWords) {
+      if (measureTextWidth(word) > limit && breakWords) {
         const pieces = splitWord(word, limit);
 
         lines.push(`${prefix}${pieces[0]}`);
@@ -139,7 +137,7 @@ function wrapParagraph(
       continue;
     }
 
-    if (charCount(`${current} ${word}`) <= limit) {
+    if (measureTextWidth(`${current} ${word}`) <= limit) {
       current = `${current} ${word}`;
       continue;
     }
@@ -147,7 +145,7 @@ function wrapParagraph(
     lines.push(`${prefix}${current}`);
     indent  = nextIndent;
 
-    if (charCount(word) > Math.max(1, width - indent) && breakWords) {
+    if (measureTextWidth(word) > Math.max(1, width - indent) && breakWords) {
       const pieces = splitWord(word, Math.max(1, width - indent));
 
       lines.push(...pieces.slice(0, -1).map((piece) => `${" ".repeat(indent)}${piece}`));
@@ -165,11 +163,25 @@ function wrapParagraph(
 }
 
 function splitWord(value: string, width: number): string[] {
-  const chars  = Array.from(value);
   const pieces = [];
+  let current  = "";
+  let size     = 0;
 
-  for (let index = 0; index < chars.length; index += width) {
-    pieces.push(chars.slice(index, index + width).join(""));
+  for (const char of Array.from(value)) {
+    const charWidth = charColumnWidth(char);
+
+    if (current && size + charWidth > width) {
+      pieces.push(current);
+      current = "";
+      size    = 0;
+    }
+
+    current += char;
+    size    += charWidth;
+  }
+
+  if (current) {
+    pieces.push(current);
   }
 
   return pieces;
@@ -177,7 +189,7 @@ function splitWord(value: string, width: number): string[] {
 
 function formatTextWithFill(value: string, width: number, fill: string, align: TextAlign): string {
   const text      = truncateText(value, width, "");
-  const remaining = Math.max(0, width - charCount(text));
+  const remaining = Math.max(0, width - measureTextWidth(text));
 
   if (align === "left") {
     return `${text}${fill.repeat(remaining)}`;
@@ -200,4 +212,58 @@ function assertPositiveWidth(width: number, name: string): void {
       message: `${name} must be a positive integer`
     });
   }
+}
+
+function takeColumns(value: string, width: number): string {
+  let result = "";
+  let size   = 0;
+
+  for (const char of Array.from(value)) {
+    const charWidth = charColumnWidth(char);
+
+    if (size + charWidth > width) {
+      break;
+    }
+
+    result += char;
+    size   += charWidth;
+  }
+
+  return result;
+}
+
+function charColumnWidth(char: string): number {
+  const codePoint = char.codePointAt(0) ?? 0;
+
+  if (isCombiningMark(codePoint)) {
+    return 0;
+  }
+
+  return isFullWidth(codePoint) ? 2 : 1;
+}
+
+function isCombiningMark(codePoint: number): boolean {
+  return (
+    (codePoint >= 0x0300 && codePoint <= 0x036f) ||
+    (codePoint >= 0x1ab0 && codePoint <= 0x1aff) ||
+    (codePoint >= 0x1dc0 && codePoint <= 0x1dff) ||
+    (codePoint >= 0x20d0 && codePoint <= 0x20ff) ||
+    (codePoint >= 0xfe20 && codePoint <= 0xfe2f)
+  );
+}
+
+function isFullWidth(codePoint: number): boolean {
+  return (
+    (codePoint >= 0x1100 && codePoint <= 0x115f) ||
+    (codePoint >= 0x2329 && codePoint <= 0x232a) ||
+    (codePoint >= 0x2e80 && codePoint <= 0xa4cf) ||
+    (codePoint >= 0xac00 && codePoint <= 0xd7a3) ||
+    (codePoint >= 0xf900 && codePoint <= 0xfaff) ||
+    (codePoint >= 0xfe10 && codePoint <= 0xfe19) ||
+    (codePoint >= 0xfe30 && codePoint <= 0xfe6f) ||
+    (codePoint >= 0xff01 && codePoint <= 0xff60) ||
+    (codePoint >= 0xffe0 && codePoint <= 0xffe6) ||
+    (codePoint >= 0x1f300 && codePoint <= 0x1faff) ||
+    (codePoint >= 0x20000 && codePoint <= 0x3fffd)
+  );
 }

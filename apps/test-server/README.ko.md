@@ -80,7 +80,7 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 ```powershell
 Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/receipt/encode -ContentType 'application/json' -Body '{
   "encoding": "cp949",
-  "width": 48,
+  "columns": 42,
   "lines": [
     "테스트 출력",
     {

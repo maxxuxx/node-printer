@@ -65,9 +65,8 @@ describe("printer bridge", () => {
       path    : "COM3",
       baudRate: 9600,
       receipt : {
-        encoding    : "ascii",
-        paperWidth  : 58,
-        charsPerLine: 4
+        encoding: "ascii",
+        columns : 4
       }
     });
 
@@ -89,9 +88,8 @@ describe("printer bridge", () => {
       path    : "COM3",
       baudRate: 9600,
       receipt : {
-        encoding    : "ascii",
-        paperWidth  : 58,
-        charsPerLine: 4
+        encoding: "ascii",
+        columns : 4
       }
     });
     const kitchen    = await bridge.savePrinter({
@@ -100,9 +98,8 @@ describe("printer bridge", () => {
       path    : "COM4",
       baudRate: 9600,
       receipt : {
-        encoding    : "ascii",
-        paperWidth  : 80,
-        charsPerLine: 6
+        encoding: "ascii",
+        columns : 6
       }
     });
 

@@ -368,9 +368,7 @@ async function buildReceipt(input) {
   const { createReceipt } = await loadPrinterPackage();
   const receipt = createReceipt({
     encoding: input?.encoding,
-    width: toOptionalNumber(input?.width),
-    paper: input?.paper,
-    charsPerLine: toOptionalNumber(input?.charsPerLine)
+    columns : toOptionalNumber(input?.columns)
   });
 
   receipt.initialize();

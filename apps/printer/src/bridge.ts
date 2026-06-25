@@ -276,8 +276,8 @@ function buildReceiptData(
   commands: ReceiptBridgeCommand[]
 ): Uint8Array {
   const receipt = createCoreReceipt({
-    encoding    : savedPrinter.receipt.encoding,
-    charsPerLine: savedPrinter.receipt.charsPerLine
+    encoding: savedPrinter.receipt.encoding,
+    columns : savedPrinter.receipt.columns
   });
 
   applyReceiptCommands(receipt, commands);

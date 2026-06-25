@@ -15,23 +15,21 @@ describe("createReceipt", () => {
   });
 
   it("creates dividers with the configured width", () => {
-    const bytes = createReceipt({ width: 4, encoding: "ascii" }).divider("=").encode();
+    const bytes = createReceipt({ columns: 4, encoding: "ascii" }).divider("=").encode();
 
     expect(new TextDecoder().decode(bytes)).toBe("====\n");
   });
 
   it("supports paper presets and explicit character width", () => {
-    const presetBytes = createReceipt({ paper: "58mm", encoding: "ascii" }).divider().encode();
-    const customBytes = createReceipt({ paper: "58mm", charsPerLine: 4, encoding: "ascii" })
+    const bytes = createReceipt({ columns: 4, encoding: "ascii" })
       .divider()
       .encode();
 
-    expect(new TextDecoder().decode(presetBytes)).toBe(`${"-".repeat(32)}\n`);
-    expect(new TextDecoder().decode(customBytes)).toBe("----\n");
+    expect(new TextDecoder().decode(bytes)).toBe("----\n");
   });
 
   it("formats simple receipt rows", () => {
-    const bytes = createReceipt({ width: 10, encoding: "ascii" })
+    const bytes = createReceipt({ columns: 10, encoding: "ascii" })
       .row([
         { text: "Tea", width: 6 },
         { text: "3000", width: 4, align: "right" }
@@ -42,7 +40,7 @@ describe("createReceipt", () => {
   });
 
   it("wraps text to the configured width", () => {
-    const bytes = createReceipt({ width: 8, encoding: "ascii" })
+    const bytes = createReceipt({ columns: 8, encoding: "ascii" })
       .wrap("one two three", { indent: 2 })
       .encode();
 
@@ -50,7 +48,7 @@ describe("createReceipt", () => {
   });
 
   it("supports divider labels and line layout helpers", () => {
-    const bytes = createReceipt({ width: 12, encoding: "ascii" })
+    const bytes = createReceipt({ columns: 12, encoding: "ascii" })
       .title("Cafe")
       .divider({ char: "=", text: "MENU" })
       .leftRight("Subtotal", "1200")
@@ -65,7 +63,7 @@ describe("createReceipt", () => {
   });
 
   it("wraps multi-line columns", () => {
-    const bytes = createReceipt({ width: 12, encoding: "ascii" })
+    const bytes = createReceipt({ columns: 12, encoding: "ascii" })
       .columns(
         [
           { text: "Apple Pie", width: 8 },
@@ -79,7 +77,7 @@ describe("createReceipt", () => {
   });
 
   it("builds tables, item rows, totals, and formatted amounts", () => {
-    const bytes = createReceipt({ width: 20, encoding: "ascii" })
+    const bytes = createReceipt({ columns: 20, encoding: "ascii" })
       .table({
         columns: [
           { title: "Name", width: 12 },
@@ -96,6 +94,19 @@ describe("createReceipt", () => {
     expect(new TextDecoder().decode(bytes)).toBe(
       `Name             Amt\n${"-".repeat(20)}\nTea             1000\nTea x2      3,000won\nTotal       4,000won\nPaid        4,000won\n`
     );
+  });
+
+  it("measures full-width receipt text as two columns", () => {
+    const bytes = createReceipt({ columns: 10, encoding: "cp949" })
+      .leftRight("합계", "4,500")
+      .encode();
+
+    expect(Array.from(bytes)).toEqual([
+      0xc7, 0xd5, 0xb0, 0xe8,
+      0x20,
+      0x34, 0x2c, 0x35, 0x30, 0x30,
+      0x0a
+    ]);
   });
 
   it("restores simple styles after a scoped style block", () => {

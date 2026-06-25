@@ -7,11 +7,11 @@ import { ALIGN_BYTES, ESC, GS, LF } from "./constants.js";
 import { buildBarcodeBytes, buildImageBytes, buildQrBytes } from "./commands.js";
 import { concatBytes, encodeAscii } from "./bytes.js";
 import {
-  charCount,
   formatAmount,
   formatColumn,
   formatDivider,
   formatText,
+  measureTextWidth,
   truncateText,
   wrapText
 } from "./layout.js";
@@ -33,7 +33,6 @@ import type {
   ReceiptKeyValueOptions,
   ReceiptLeftRightOptions,
   ReceiptOptions,
-  ReceiptPaperSize,
   ReceiptQrOptions,
   ReceiptSectionOptions,
   ReceiptStyleOptions,
@@ -51,14 +50,10 @@ import { assertScale } from "./validators.js";
 
 // Receipt builder
 
-const PAPER_WIDTHS: Record<ReceiptPaperSize, number> = {
-  "58mm": 32,
-  "76mm": 42,
-  "80mm": 48
-};
+const DEFAULT_COLUMNS = 42;
 
 interface ReceiptConfig {
-  width: number;
+  columns: number;
   encoding: ReceiptEncoding;
 }
 
@@ -89,13 +84,12 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   };
 
   constructor(options: ReceiptOptions) {
-    const paper = options.paper ?? "80mm";
-    const width = options.charsPerLine ?? options.width ?? PAPER_WIDTHS[paper];
+    const columns = options.columns ?? DEFAULT_COLUMNS;
 
-    this.assertByteRange(width, "Receipt width", 1);
+    this.assertByteRange(columns, "Receipt columns", 1);
 
     this.config = {
-      width,
+      columns,
       encoding: options.encoding ?? "utf8"
     };
     this.currentEncoding = this.config.encoding;
@@ -128,7 +122,7 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   }
 
   divider(options: string | ReceiptDividerOptions = "-"): this {
-    return this.text(formatDivider(this.config.width, options), { newLine: true });
+    return this.text(formatDivider(this.config.columns, options), { newLine: true });
   }
 
   blank(lines = 1): this {
@@ -142,7 +136,7 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   }
 
   wrap(value: string, options: ReceiptWrapOptions = {}): this {
-    const width       = options.width ?? this.config.width;
+    const width       = options.width ?? this.config.columns;
     const textOptions = this.textOptions(options);
 
     for (const line of wrapText(value, width, options)) {
@@ -153,18 +147,18 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   }
 
   truncate(value: string, options: ReceiptTruncateOptions = {}): this {
-    const width       = options.width ?? this.config.width;
+    const width       = options.width ?? this.config.columns;
     const textOptions = this.textOptions(options);
 
     return this.text(truncateText(value, width, options.ellipsis), textOptions);
   }
 
   leftRight(left: string, right: string, options: ReceiptLeftRightOptions = {}): this {
-    const width       = options.width ?? this.config.width;
+    const width       = options.width ?? this.config.columns;
     const rightText   = truncateText(right, width, "");
-    const leftWidth   = Math.max(0, width - charCount(rightText));
+    const leftWidth   = Math.max(0, width - measureTextWidth(rightText));
     const leftText    = leftWidth > 0 ? truncateText(left, leftWidth, "") : "";
-    const spaceCount  = Math.max(0, width - charCount(leftText) - charCount(rightText));
+    const spaceCount  = Math.max(0, width - measureTextWidth(leftText) - measureTextWidth(rightText));
     const textOptions = this.textOptions(options);
 
     return this.text(`${leftText}${" ".repeat(spaceCount)}${rightText}`, textOptions);
@@ -268,7 +262,7 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   }
 
   title(value: string, options: ReceiptTitleOptions = {}): this {
-    const width = options.width ?? this.config.width;
+    const width = options.width ?? this.config.columns;
 
     return this.text(formatText(value, width, options.align ?? "center"), {
       bold     : options.bold,

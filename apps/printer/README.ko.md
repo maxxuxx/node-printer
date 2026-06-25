@@ -113,7 +113,7 @@ Winspool은 Windows에서만 사용할 수 있습니다
 ## 영수증 Builder
 
 ```ts
-const receipt = createReceipt({ width: 48, encoding: "cp949" })
+const receipt = createReceipt({ columns: 42, encoding: "cp949" })
   .initialize()
   .align("center")
   .bold()
@@ -187,8 +187,7 @@ const saved = await window.electronAPI.printer.savePrinter({
   printerName: printers[0].name,
   receipt: {
     encoding: "cp949",
-    paperWidth: 80,
-    charsPerLine: 48
+    columns: 42
   }
 });
 ```

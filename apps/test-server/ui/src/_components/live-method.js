@@ -22,8 +22,7 @@ function buildReceiptLines(receipt) {
     "const receipt = createReceipt({",
     ...formatObjectFields(
       {
-        paper: receipt.paper,
-        width: Number(receipt.receiptWidth)
+        columns: Number(receipt.receiptColumns)
       },
       2
     ),
@@ -141,7 +140,7 @@ function formatValue(value) {
 }
 
 function formatInlineColumns(receipt) {
-  const leftWidth = Math.max(1, Number(receipt.receiptWidth) - 12);
+  const leftWidth = Math.max(1, Number(receipt.receiptColumns) - 12);
 
   return `[${formatInlineObject({ text: receipt.columnLeft, width: leftWidth })}, ${formatInlineObject({ text: receipt.columnRight, width: 12, align: "right" })}]`;
 }
@@ -149,7 +148,7 @@ function formatInlineColumns(receipt) {
 function formatInlineTable(receipt) {
   return formatInlineObject({
     columns: [
-      { title: "Name", width: Math.max(1, Number(receipt.receiptWidth) - 12) },
+      { title: "Name", width: Math.max(1, Number(receipt.receiptColumns) - 12) },
       { title: "Amount", width: 12, align: "right" }
     ],
     divider: true,

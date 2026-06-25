@@ -125,7 +125,7 @@ The native binding uses bundled prebuilds and does not compile during npm instal
 ## Receipt Builder
 
 ```ts
-const receipt = createReceipt({ width: 48, encoding: "cp949" })
+const receipt = createReceipt({ columns: 42, encoding: "cp949" })
   .initialize()
   .align("center")
   .bold()
@@ -199,8 +199,7 @@ const saved = await window.electronAPI.printer.savePrinter({
   printerName: printers[0].name,
   receipt: {
     encoding: "cp949",
-    paperWidth: 80,
-    charsPerLine: 48
+    columns: 42
   }
 });
 ```

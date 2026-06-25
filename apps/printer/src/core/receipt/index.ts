@@ -23,7 +23,6 @@ export type {
   ReceiptKeyValueOptions,
   ReceiptLeftRightOptions,
   ReceiptOptions,
-  ReceiptPaperSize,
   ReceiptQrOptions,
   ReceiptSectionOptions,
   ReceiptStyleOptions,

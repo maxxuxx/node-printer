@@ -3,7 +3,6 @@
   export let encodedReceipt;
   export let livePreview;
   export let methodText;
-  export let paper;
   export let previewFontSize;
   export let t;
 
@@ -38,7 +37,7 @@
         <div class="receipt-paper" style={`--receipt-line-width: ${columns}ch; --receipt-preview-font-size: ${previewFontSize}px;`}>
           <div class="receipt-paper-head">
             <span>{t("livePreview")}</span>
-            <strong>{paper} {columns} {t("columnsUnit")}</strong>
+            <strong>{columns} {t("columnsUnit")}</strong>
           </div>
           <div class="receipt-preview-body">
             {#each livePreview as row}
@@ -95,7 +94,7 @@
       <div class="live-method">
         <div class="receipt-paper-head">
           <span>{t("liveMethod")}</span>
-          <strong>{paper} {columns} {t("columnsUnit")}</strong>
+          <strong>{columns} {t("columnsUnit")}</strong>
         </div>
         <pre>{methodText}</pre>
       </div>
