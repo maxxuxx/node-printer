@@ -157,69 +157,6 @@ const usbPrinters = await listPrinters("usb");
 const networkPrinters = await listPrinters("network");
 ```
 
-## Electron bridge
-
-Electron preload에서 설정 파일 경로를 등록하고 기존 bridge에 printer API를 합칠 수 있습니다
-
-`printersJsonPath`는 Electron main 쪽에서 `app.getPath("userData")` 아래 경로로 준비하는 것을 권장합니다
-
-```ts
-import { contextBridge } from "electron";
-import {
-  configurePrinterSettings,
-  createPrinterBridge
-} from "@maxxuxx/node-printer";
-
-configurePrinterSettings({ filePath: printersJsonPath });
-
-contextBridge.exposeInMainWorld("electronAPI", {
-  printer: createPrinterBridge()
-});
-```
-
-웹에서는 실제 프린터를 조회하고 사용할 프린터를 저장합니다
-
-```ts
-const printers = await window.electronAPI.printer.listPrinters("usb");
-const saved = await window.electronAPI.printer.savePrinter({
-  name: "카운터",
-  type: "usb",
-  printerName: printers[0].name,
-  receipt: {
-    encoding: "cp949",
-    columns: 42
-  }
-});
-```
-
-저장된 프린터 id로 영수증을 만들고 출력합니다
-
-```ts
-await window.electronAPI.printer
-  .createReceipt(saved.id)
-  .initialize()
-  .text("테스트 출력")
-  .divider()
-  .text("합계 4,500")
-  .feed(3)
-  .cut()
-  .print({ copies: 2 });
-```
-
-여러 프린터에 같은 영수증을 보낼 때는 id 배열을 사용합니다
-
-```ts
-await window.electronAPI.printer
-  .createReceipt([counterId, kitchenId])
-  .text("테스트 출력")
-  .cut()
-  .print();
-```
-
-`exposePrinterBridge(contextBridge)`를 쓰면 기본 이름인 `window.nodePrinter`로 노출됩니다
-
-외부 웹 페이지에 bridge를 노출하면 프린터 권한도 함께 노출되므로 신뢰할 수 있는 URL에만 연결해야 합니다
-
 ## Prebuild
 
 일반 설치는 Windows, macOS, Linux, Android arm 또는 arm64 serial prebuild를 사용합니다

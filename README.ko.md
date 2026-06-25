@@ -51,17 +51,7 @@ npm install @maxxuxx/node-printer
 | Windows Spooler | ✅ 지원 (Windows 전용) | Windows에서 번들된 N-API prebuild로 동작              |
 
 
-## 지원 인코딩
-
-영수증 builder는 아래 인코딩을 지원합니다
-
-
-| 인코딩     | 지원   | 사용 상황             |
-| ------- | ---- | ----------------- |
-| `utf8`  | ✅ 지원 | 기본값, UTF-8 텍스트 출력 |
-| `ascii` | ✅ 지원 | 영문과 숫자 중심 출력      |
-| `cp949` | ✅ 지원 | 한글 영수증 출력 권장      |
-
+## 영수증 인코딩
 
 한글 영수증은 보통 `cp949`를 사용합니다
 
@@ -69,22 +59,7 @@ npm install @maxxuxx/node-printer
 const receipt = createReceipt({ encoding: "cp949" }).text("테스트 출력").encode();
 ```
 
-## 워크스페이스 모듈
-
-npm에는 `@maxxuxx/node-printer`만 배포하고, 나머지 이름은 private 내부 alias로만 사용합니다
-
-기존 `@maxxuxx/node-printer-*` 개별 패키지는 npm에서 deprecated 처리하고 `@maxxuxx/node-printer`로 대체합니다
-
-
-| 모듈                       | 용도                                                         |
-| ------------------------ | ---------------------------------------------------------- |
-| `@maxxuxx/node-printer`  | lazy-loaded transport를 제공하는 배포 진입점                         |
-| `apps/printer/src/core`     | 공통 타입, 오류, ESC/POS 영수증 builder, CP949 인코딩                  |
-| `apps/printer/src/transports/network`  | timeout, retry, chunked write를 갖춘 TCP 9100 transport       |
-| `apps/printer/src/transports/serial`   | serialport 기반 COM 또는 tty 장치를 사용하는 serial transport          |
-| `apps/printer/src/transports/cups`     | `lp`, `lpr`, `lpstat`을 사용하는 macOS와 Linux 시스템 프린터 transport |
-| `apps/printer/src/transports/winspool` | bundled N-API prebuild를 포함한 Windows Spooler RAW transport        |
-
+지원 인코딩, 주 사용 국가, ESC/POS code page 참고는 [인코딩 문서](docs/encoding.kr.md)를 확인합니다
 
 ## 빠른 시작
 
@@ -124,69 +99,6 @@ const serialPorts = await listPrinters("serial");
 const usbPrinters = await listPrinters("usb");
 const networkPrinters = await listPrinters("network");
 ```
-
-## Electron bridge
-
-Electron preload에서 설정 파일 경로를 등록하고 기존 bridge에 printer API를 합칠 수 있습니다
-
-`printersJsonPath`는 Electron main 쪽에서 `app.getPath("userData")` 아래 경로로 준비하는 것을 권장합니다
-
-```ts
-import { contextBridge } from "electron";
-import {
-  configurePrinterSettings,
-  createPrinterBridge
-} from "@maxxuxx/node-printer";
-
-configurePrinterSettings({ filePath: printersJsonPath });
-
-contextBridge.exposeInMainWorld("electronAPI", {
-  printer: createPrinterBridge()
-});
-```
-
-웹에서는 실제 프린터를 조회하고 사용할 프린터를 저장합니다
-
-```ts
-const printers = await window.electronAPI.printer.listPrinters("usb");
-const saved = await window.electronAPI.printer.savePrinter({
-  name: "카운터",
-  type: "usb",
-  printerName: printers[0].name,
-  receipt: {
-    encoding: "cp949",
-    columns: 42
-  }
-});
-```
-
-저장된 프린터 id로 영수증을 만들고 출력합니다
-
-```ts
-await window.electronAPI.printer
-  .createReceipt(saved.id)
-  .initialize()
-  .text("테스트 출력")
-  .divider()
-  .text("합계 4,500")
-  .feed(3)
-  .cut()
-  .print({ copies: 2 });
-```
-
-여러 프린터에 같은 영수증을 보낼 때는 id 배열을 사용합니다
-
-```ts
-await window.electronAPI.printer
-  .createReceipt([counterId, kitchenId])
-  .text("테스트 출력")
-  .cut()
-  .print();
-```
-
-`exposePrinterBridge(contextBridge)`를 쓰면 기본 이름인 `window.nodePrinter`로 노출됩니다
-
-외부 웹 페이지에 bridge를 노출하면 프린터 권한도 함께 노출되므로 신뢰할 수 있는 URL에만 연결해야 합니다
 
 ## Prebuild
 
@@ -253,8 +165,8 @@ corepack pnpm test-server
 
 ## 추가 문서
 
-- [Windows setup](docs/windows-setup.md)
-- [Winspool N-API design](docs/winspool-napi-design.md)
+- [API 사용 문서](docs/api.kr.md)
+- [인코딩 문서](docs/encoding.kr.md)
 
 ## Contributors 환영
 

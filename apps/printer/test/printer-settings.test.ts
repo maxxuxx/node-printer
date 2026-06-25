@@ -8,16 +8,40 @@ const tempDirs: string[] = [];
 
 describe("printer settings", () => {
   afterEach(async () => {
+    vi.doUnmock("node:os");
+    vi.resetModules();
     await Promise.all(tempDirs.splice(0).map((path) => rm(path, { recursive: true, force: true })));
   });
 
-  it("requires a configured settings file before using saved printers", async () => {
+  it("uses the user home fallback settings file when not configured", async () => {
     vi.resetModules();
-    const { listSavedPrinters } = await import("../src/index.js");
+    const dir = await mkdtemp(join(tmpdir(), "node-printer-home-"));
 
-    await expect(listSavedPrinters()).rejects.toMatchObject({
-      code: "ERR_PRINTER_SETTINGS_NOT_CONFIGURED"
+    tempDirs.push(dir);
+    vi.doMock("node:os", async () => ({
+      ...(await vi.importActual("node:os")),
+      homedir: () => dir
+    }));
+
+    const printer = await import("../src/index.js");
+    const saved   = await printer.savePrinter({
+      name    : "Serial",
+      type    : "serial",
+      path    : "COM3",
+      baudRate: 9600,
+      receipt : {
+        encoding: "cp949",
+        columns : 42
+      }
     });
+
+    await expect(printer.listSavedPrinters()).resolves.toEqual([saved]);
+
+    const file = JSON.parse(await readFile(join(dir, ".node-printer", "printers.json"), "utf8")) as {
+      printers: unknown[];
+    };
+
+    expect(file.printers).toEqual([saved]);
   });
 
   it("saves usb printers with a generated id and platform target", async () => {

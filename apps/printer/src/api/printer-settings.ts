@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { homedir } from "node:os";
+import { dirname, join } from "node:path";
 
 import { PrinterError } from "#core";
 import type {
@@ -140,14 +141,7 @@ async function writeSettingsFile(settings: PrinterSettingsFile): Promise<void> {
 }
 
 function getSettingsFilePath(): string {
-  if (!settingsFilePath) {
-    throw new PrinterError({
-      code   : "ERR_PRINTER_SETTINGS_NOT_CONFIGURED",
-      message: "Printer settings filePath is not configured"
-    });
-  }
-
-  return settingsFilePath;
+  return settingsFilePath ?? join(homedir(), ".node-printer", "printers.json");
 }
 
 // Input conversion

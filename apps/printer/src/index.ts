@@ -33,22 +33,6 @@ export type {
 } from "#winspool";
 
 export {
-  createPrinterBridge,
-  exposePrinterBridge,
-  PRINTER_BRIDGE_NAME
-} from "./bridge.js";
-export type {
-  PrinterBridge,
-  PrinterBridgeContext,
-  PrinterBridgeData,
-  PrinterBridgeReceipt,
-  PrinterBridgeGlobal,
-  PrinterBridgeWindow,
-  PrinterIdInput,
-  ReceiptPrintOptions,
-  ReceiptPrintResult
-} from "./bridge.js";
-export {
   clearSavedPrinters,
   configurePrinterSettings,
   getSavedPrinter,

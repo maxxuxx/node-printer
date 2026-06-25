@@ -63,17 +63,7 @@ npm install @maxxuxx/node-printer
 | Windows Spooler | ✅ Supported (Windows only) | Bundled N-API prebuilds on Windows          |
 
 
-## Supported encodings
-
-The receipt builder supports the encodings below
-
-
-| Encoding | Support      | When to use                         |
-| -------- | ------------ | ----------------------------------- |
-| `utf8`   | ✅ Supported | Default, UTF-8 text output          |
-| `ascii`  | ✅ Supported | English and numbers first           |
-| `cp949`  | ✅ Supported | Recommended for Korean receipts     |
-
+## Receipt encoding
 
 Korean receipts usually use `cp949`
 
@@ -81,22 +71,7 @@ Korean receipts usually use `cp949`
 const receipt = createReceipt({ encoding: "cp949" }).text("테스트 출력").encode();
 ```
 
-## Internal modules
-
-Only `@maxxuxx/node-printer` is published to npm. Core logic and transports are internal source modules inside `apps/printer`
-
-Legacy split packages named `@maxxuxx/node-printer-*` should be deprecated on npm and replaced by `@maxxuxx/node-printer`
-
-
-| Module                              | Purpose                                                    |
-| ----------------------------------- | ---------------------------------------------------------- |
-| `apps/printer/src/api`              | Public method API dispatch for `print` and `listPrinters`  |
-| `apps/printer/src/core`             | Shared types, errors, ESC/POS receipt builder, CP949       |
-| `apps/printer/src/transports/serial` | serialport wrapper for COM or tty printing                 |
-| `apps/printer/src/transports/network` | TCP 9100 transport with timeout, retry, and chunked writes |
-| `apps/printer/src/transports/cups`  | macOS and Linux system printers through `lp`, `lpr`, `lpstat` |
-| `apps/printer/src/transports/winspool` | Windows Spooler RAW transport with bundled N-API prebuilds |
-
+See [Encoding guide](docs/encoding.md) for supported values, common country usage, and ESC/POS code page notes
 
 ## Quick Start
 
@@ -136,69 +111,6 @@ const serialPorts = await listPrinters("serial");
 const usbPrinters = await listPrinters("usb");
 const networkPrinters = await listPrinters("network");
 ```
-
-## Electron bridge
-
-Register the settings file path from Electron and merge the printer API into an existing bridge
-
-Prepare `printersJsonPath` from Electron main under `app.getPath("userData")`
-
-```ts
-import { contextBridge } from "electron";
-import {
-  configurePrinterSettings,
-  createPrinterBridge
-} from "@maxxuxx/node-printer";
-
-configurePrinterSettings({ filePath: printersJsonPath });
-
-contextBridge.exposeInMainWorld("electronAPI", {
-  printer: createPrinterBridge()
-});
-```
-
-The web page can discover real printers and save the printer profile used by the app
-
-```ts
-const printers = await window.electronAPI.printer.listPrinters("usb");
-const saved = await window.electronAPI.printer.savePrinter({
-  name: "Counter",
-  type: "usb",
-  printerName: printers[0].name,
-  receipt: {
-    encoding: "cp949",
-    columns: 42
-  }
-});
-```
-
-Build and print a receipt through the saved printer id
-
-```ts
-await window.electronAPI.printer
-  .createReceipt(saved.id)
-  .initialize()
-  .text("Test print")
-  .divider()
-  .text("Total 4,500")
-  .feed(3)
-  .cut()
-  .print({ copies: 2 });
-```
-
-Use an id list to send the same receipt commands to multiple printers
-
-```ts
-await window.electronAPI.printer
-  .createReceipt([counterId, kitchenId])
-  .text("Test print")
-  .cut()
-  .print();
-```
-
-`exposePrinterBridge(contextBridge)` is still available when you want the default `window.nodePrinter` name
-
-Only expose the bridge to trusted URLs because the page receives printer access through the bridge
 
 ## Prebuild
 
@@ -271,8 +183,8 @@ Open `http://localhost:3007` to try each library
 
 ## More documentation
 
-- [Windows setup](docs/windows-setup.en.md)
-- [Winspool N-API design](docs/winspool-napi-design.en.md)
+- [API usage](docs/api.md)
+- [Encoding guide](docs/encoding.md)
 
 ## Contributors welcome
 

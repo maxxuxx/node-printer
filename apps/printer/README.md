@@ -169,69 +169,6 @@ const usbPrinters = await listPrinters("usb");
 const networkPrinters = await listPrinters("network");
 ```
 
-## Electron bridge
-
-Register the settings file path from Electron and merge the printer API into an existing bridge
-
-Prepare `printersJsonPath` from Electron main under `app.getPath("userData")`
-
-```ts
-import { contextBridge } from "electron";
-import {
-  configurePrinterSettings,
-  createPrinterBridge
-} from "@maxxuxx/node-printer";
-
-configurePrinterSettings({ filePath: printersJsonPath });
-
-contextBridge.exposeInMainWorld("electronAPI", {
-  printer: createPrinterBridge()
-});
-```
-
-The web page can discover real printers and save the printer profile used by the app
-
-```ts
-const printers = await window.electronAPI.printer.listPrinters("usb");
-const saved = await window.electronAPI.printer.savePrinter({
-  name: "Counter",
-  type: "usb",
-  printerName: printers[0].name,
-  receipt: {
-    encoding: "cp949",
-    columns: 42
-  }
-});
-```
-
-Build and print a receipt through the saved printer id
-
-```ts
-await window.electronAPI.printer
-  .createReceipt(saved.id)
-  .initialize()
-  .text("Test print")
-  .divider()
-  .text("Total 4,500")
-  .feed(3)
-  .cut()
-  .print({ copies: 2 });
-```
-
-Use an id list to send the same receipt commands to multiple printers
-
-```ts
-await window.electronAPI.printer
-  .createReceipt([counterId, kitchenId])
-  .text("Test print")
-  .cut()
-  .print();
-```
-
-`exposePrinterBridge(contextBridge)` is still available when you want the default `window.nodePrinter` name
-
-Only expose the bridge to trusted URLs because the page receives printer access through the bridge
-
 ## Prebuilds
 
 Normal installs use bundled serial prebuilds on Windows, macOS, Linux, and Android arm or arm64

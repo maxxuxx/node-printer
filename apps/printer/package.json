@@ -1,6 +1,6 @@
 {
   "name": "@maxxuxx/node-printer",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "Unified entry point for ESC/POS receipt printer transports (serial, network, CUPS, Windows Spooler)",
   "license": "MIT",
   "homepage": "https://github.com/maxxuxx/node-printer#readme",
