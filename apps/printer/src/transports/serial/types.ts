@@ -43,6 +43,10 @@ export interface SerialPortConnection {
   write (data: Uint8Array, callback: SerialCallback): void;
   drain (callback: SerialCallback)                  : void;
   close (callback: SerialCallback)                  : void;
+
+  // 상태 조회 응답을 읽기 위한 data 이벤트 구독입니다 (serialport 스트림 제공)
+  on  ?(event: "data", listener: (chunk: Uint8Array) => void): unknown;
+  off ?(event: "data", listener: (chunk: Uint8Array) => void): unknown;
 }
 
 export type SerialCallback = (error?: Error | null) => void;

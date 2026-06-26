@@ -189,6 +189,103 @@ const printers = await listPrinters("network", {
 });
 ```
 
+## getStatus
+
+`getStatus(target, options?)` returns a `PrinterStatus`
+
+The source depends on the target. Serial and network targets use ESC/POS real-time status commands (`DLE EOT`), while winspool and cups read the OS spooler state without sending ESC/POS
+
+```ts
+import { getStatus } from "@maxxuxx/node-printer";
+
+const status = await getStatus({ type: "winspool", printerName: "Receipt" });
+
+console.log(status.online, status.paperOut, status.coverOpen);
+```
+
+```ts
+interface PrinterStatus {
+  target: PrinterTarget;
+  source: "escpos" | "winspool" | "cups";
+  online?: boolean;
+  paperOut?: boolean;
+  paperNearEnd?: boolean;
+  coverOpen?: boolean;
+  paperJam?: boolean;
+  drawerOpen?: boolean;
+  error?: boolean;
+  paused?: boolean;
+  busy?: boolean;
+  raw?: Record<string, number | string | boolean>;
+}
+```
+
+Each boolean is left `undefined` when the source cannot report that field, so `undefined` and `false` are distinguished
+
+| target              | source     | Behavior                                                       |
+| ------------------- | ---------- | -------------------------------------------------------------- |
+| `serial`/`network`  | `"escpos"` | Sends `DLE EOT 1~4` and decodes the response bytes             |
+| `winspool`          | `"winspool"` | Decodes the Windows Spooler `PRINTER_STATUS` bit flags       |
+| `cups`              | `"cups"`   | Parses `lpstat -l -p` state text and `printer-state-reasons`   |
+
+Serial and network status requires a printer that supports ESC/POS real-time status, and throws a timeout error when there is no response
+
+## getPaperInfo
+
+`getPaperInfo(target, options?)` resolves the printable paper width and the receipt `columns` to use
+
+```ts
+import { getPaperInfo, createReceipt } from "@maxxuxx/node-printer";
+
+const info = await getPaperInfo({ type: "winspool", printerName: "Receipt" });
+
+const receipt = createReceipt({ columns: info.columns, encoding: "cp949" })
+  .text("Width-aware print")
+  .cut()
+  .encode();
+```
+
+```ts
+interface PaperInfo {
+  target: PrinterTarget;
+  source: "system" | "manual" | "default";
+  font: "a" | "b";
+  columns: number;
+  widthMm?: number;
+  printableWidthDots?: number;
+  dpi?: number;
+}
+```
+
+`columns` is resolved in this priority order
+
+1. Explicit `options.columns` (source `"manual"`)
+2. System driver width when `useSystemWidth` is enabled, for `winspool` and `cups` only (source `"system"`)
+3. Manual `options.paper` preset or measurement (source `"manual"`)
+4. Default `42` (source `"default"`)
+
+| option           | Default | Meaning                                                          |
+| ---------------- | ------- | ---------------------------------------------------------------- |
+| `useSystemWidth` | `true`  | Reads the OS driver width for `winspool` and `cups`              |
+| `font`           | `"a"`   | Font width basis for the dots-to-columns calculation             |
+| `paper`          | -       | Manual `"58mm"`/`"80mm"` preset or `{ widthMm, printableWidthDots, dpi }` |
+| `columns`        | -       | Forces a fixed `columns` value and skips all detection           |
+
+Serial and network direct connections cannot read a system width, so they fall back to `paper` or the default
+
+`resolveColumns(target, options?)` is a convenience wrapper that returns only `columns`
+
+```ts
+import { resolveColumns, createReceipt } from "@maxxuxx/node-printer";
+
+const columns = await resolveColumns(
+  { type: "winspool", printerName: "Receipt" },
+  { font: "a" }
+);
+
+const receipt = createReceipt({ columns }).text("Sized").cut().encode();
+```
+
 ## createReceipt
 
 `createReceipt(options?)` returns a `ReceiptBuilder`
@@ -200,10 +297,20 @@ const receipt = createReceipt({
 });
 ```
 
-| option     | Default  | Meaning                                             |
-| ---------- | -------- | --------------------------------------------------- |
-| `columns`  | `42`     | Character width for one line                        |
-| `encoding` | `"utf8"` | Encoding used to convert receipt text into bytes    |
+| option     | Default  | Meaning                                                          |
+| ---------- | -------- | ---------------------------------------------------------------- |
+| `columns`  | `42`     | Character width for one line                                     |
+| `encoding` | `"utf8"` | Encoding used to convert receipt text into bytes                 |
+| `paper`    | -        | `"58mm"`/`"80mm"` preset that derives `columns` when `columns` is omitted |
+| `font`     | `"a"`    | Font width basis used when deriving `columns` from `paper`        |
+
+For serial or IP direct connections that cannot read a system width, declare the width manually with `paper`
+
+```ts
+const receipt = createReceipt({ paper: "80mm", encoding: "cp949" }); // columns is derived as 48
+```
+
+For winspool or cups system printers, resolve `columns` from the driver with `getPaperInfo` and pass it in
 
 See [Encoding guide](encoding.md) for supported values, common country usage, and ESC/POS code page notes
 

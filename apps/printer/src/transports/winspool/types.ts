@@ -21,6 +21,12 @@ export interface WinspoolPrintRawOptions {
   documentName?: string;
 }
 
+export interface WinspoolCapabilities {
+  printableWidthDots?: number;
+  widthMm           ?: number;
+  dpi               ?: number;
+}
+
 export interface WinspoolBinding {
   listPrinters(): Promise<WinspoolNativePrinterInfo[]>;
   getDefaultPrinter(): Promise<string | null>;
@@ -28,6 +34,7 @@ export interface WinspoolBinding {
     jobId       ?: number;
     bytesWritten: number;
   }>;
+  getPrinterCapabilities?(printerName: string): Promise<WinspoolCapabilities>;
 }
 
 export type WinspoolPrinter = {

@@ -3,6 +3,7 @@ import { TextEncoder } from "node:util";
 import * as iconv from "iconv-lite";
 
 import { PrinterError } from "../errors.js";
+import { columnsFromDots, paperPresetToCapabilities, resolvePrintableDots } from "../paper.js";
 import { ALIGN_BYTES, ESC, GS, LF } from "./constants.js";
 import { buildBarcodeBytes, buildImageBytes, buildQrBytes } from "./commands.js";
 import { concatBytes, encodeAscii } from "./bytes.js";
@@ -69,6 +70,23 @@ export function createReceipt(options: ReceiptOptions = {}): ReceiptBuilder {
   return new EscPosReceiptBuilder(options);
 }
 
+// columns 명시값 > 용지 프리셋 환산값 > 기본값 순으로 한 줄 글자 수를 정합니다
+function resolveColumns(options: ReceiptOptions): number {
+  if (typeof options.columns === "number") {
+    return options.columns;
+  }
+
+  if (options.paper) {
+    const dots = resolvePrintableDots(paperPresetToCapabilities(options.paper));
+
+    if (typeof dots === "number") {
+      return columnsFromDots(dots, options.font ?? "a");
+    }
+  }
+
+  return DEFAULT_COLUMNS;
+}
+
 class EscPosReceiptBuilder implements ReceiptBuilder {
   private readonly chunks : Uint8Array[] = [];
   private readonly config : ReceiptConfig;
@@ -84,7 +102,7 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   };
 
   constructor(options: ReceiptOptions) {
-    const columns = options.columns ?? DEFAULT_COLUMNS;
+    const columns = resolveColumns(options);
 
     this.assertByteRange(columns, "Receipt columns", 1);
 

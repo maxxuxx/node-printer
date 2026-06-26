@@ -28,8 +28,73 @@ export class SerialPrinterTransport {
     return enqueueSerialOperation(this.target.path, () => this.runPrint(data));
   }
 
+  // 상태 질의 바이트를 쓰고 응답 바이트를 모아 반환합니다 (응답 없으면 빈 배열)
+  queryStatus(query: Uint8Array, expectedBytes: number): Promise<Uint8Array> {
+    return enqueueSerialOperation(this.target.path, () => this.runQueryStatus(query, expectedBytes));
+  }
+
   async close(): Promise<void> {
     await enqueueSerialOperation(this.target.path, () => this.closeCurrentPort());
+  }
+
+  private async runQueryStatus(query: Uint8Array, expectedBytes: number): Promise<Uint8Array> {
+    const port = await this.open();
+
+    try {
+      const response = await this.collectResponse(port, query, expectedBytes);
+
+      return response;
+    } finally {
+      await this.closePort(port).catch(() => undefined);
+    }
+  }
+
+  // data 이벤트로 응답을 모으되, 타임아웃이 나면 그때까지 모인 바이트를 반환합니다
+  private collectResponse(
+    port: SerialPortConnection,
+    query: Uint8Array,
+    expectedBytes: number
+  ): Promise<Uint8Array> {
+    return new Promise((resolve, reject) => {
+      const chunks  : Uint8Array[] = [];
+      let received  = 0;
+      let settled   = false;
+
+      const onData = (chunk: Uint8Array): void => {
+        chunks.push(chunk);
+        received += chunk.byteLength;
+
+        if (received >= expectedBytes) {
+          finish();
+        }
+      };
+
+      const finish = (error?: Error): void => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        clearTimeout(timer);
+        port.off?.("data", onData);
+
+        if (error) {
+          reject(normalizeSerialError(error, "read"));
+          return;
+        }
+
+        resolve(concatChunks(chunks));
+      };
+
+      const timer = setTimeout(() => finish(), this.target.timeoutMs);
+
+      port.on?.("data", onData);
+      port.write(query, (error) => {
+        if (error) {
+          finish(error);
+        }
+      });
+    });
   }
 
   private async runPrint(data: Uint8Array): Promise<PrintResult> {
@@ -139,4 +204,18 @@ export class SerialPrinterTransport {
       this.port = undefined;
     }
   }
+}
+
+// 응답 청크들을 하나의 Uint8Array로 합칩니다
+function concatChunks(chunks: Uint8Array[]): Uint8Array {
+  const total  = chunks.reduce((size, chunk) => size + chunk.byteLength, 0);
+  const result = new Uint8Array(total);
+  let offset    = 0;
+
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return result;
 }

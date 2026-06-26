@@ -211,6 +211,20 @@ async function handleApi(request, response, url) {
     return;
   }
 
+  if (request.method === "POST" && url.pathname === "/api/status") {
+    const body = await readJsonBody(request);
+
+    await handleStatus(response, body);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/paper-info") {
+    const body = await readJsonBody(request);
+
+    await handlePaperInfo(response, body);
+    return;
+  }
+
   sendJson(response, 404, errorBody(new Error("API route not found")));
 }
 
@@ -261,6 +275,51 @@ async function handlePrint(response, body) {
     result: results.at(-1),
     results
   });
+}
+
+// 대상 프린터의 상태(용지 없음/커버 열림/온라인 등)를 조회
+async function handleStatus(response, body) {
+  const target = body?.target;
+
+  if (!target?.type) {
+    throw createBadRequestError("Printer target is required");
+  }
+
+  if (target.type === "winspool" && process.platform !== "win32") {
+    throw createBadRequestError(
+      "Winspool status requires the test server to run in Windows Node"
+    );
+  }
+
+  const { getStatus } = await loadPrinterPackage();
+  const status = await getStatus(target);
+
+  sendJson(response, 200, { ok: true, status, runtime: getRuntimeInfo() });
+}
+
+// 대상 프린터의 용지 너비와 계산된 columns를 조회
+async function handlePaperInfo(response, body) {
+  const target = body?.target;
+
+  if (!target?.type) {
+    throw createBadRequestError("Printer target is required");
+  }
+
+  if (target.type === "winspool" && process.platform !== "win32") {
+    throw createBadRequestError(
+      "Winspool paper info requires the test server to run in Windows Node"
+    );
+  }
+
+  const { getPaperInfo } = await loadPrinterPackage();
+  const paperInfo = await getPaperInfo(target, {
+    useSystemWidth: body?.useSystemWidth !== false,
+    font          : body?.font,
+    paper         : body?.paper,
+    columns       : toOptionalNumber(body?.columns)
+  });
+
+  sendJson(response, 200, { ok: true, paperInfo, runtime: getRuntimeInfo() });
 }
 
 // 빌드와 플랫폼 조건을 합쳐 UI에 노출할 기능 상태를 계산

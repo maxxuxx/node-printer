@@ -36,9 +36,13 @@ export interface NetworkSocket {
   off(event: "connect", listener: () => void): this;
   off(event: "error", listener: (error: Error) => void): this;
   off(event: "drain", listener: () => void): this;
+  off(event: "data", listener: (chunk: Uint8Array) => void): this;
   write(data: Uint8Array, callback: (error?: Error | null) => void): boolean;
   end(): this;
   destroy(error?: Error): this;
+
+  // 상태 조회 응답을 읽기 위한 data 이벤트 구독입니다 (node net.Socket 제공)
+  on?(event: "data", listener: (chunk: Uint8Array) => void): unknown;
 }
 
 export interface NetworkPrinterDependencies {

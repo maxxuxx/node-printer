@@ -245,6 +245,7 @@ function buildNativeAddon(options) {
     quoteArg(hookObjectPath),
     quoteArg(options.nodeLibPath),
     "Winspool.lib",
+    "Gdi32.lib",
     "delayimp.lib"
   ].join(" ");
 

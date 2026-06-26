@@ -424,13 +424,21 @@
     network: false
   };
   let pending                 = {
-    status : false,
-    encode : false,
-    print  : false,
-    serial : false,
-    usb    : false,
-    network: false
+    status  : false,
+    encode  : false,
+    print   : false,
+    serial  : false,
+    usb     : false,
+    network : false,
+    diagnose: false
   };
+
+  // 진단(상태/용지 너비) 조회 옵션 상태
+  let diagFont            = "a";
+  let diagPaper           = "";
+  let diagUseSystemWidth  = true;
+  let diagStatus          = null;
+  let diagPaperInfo       = null;
 
   // 영수증 본문과 출력 옵션 상태
   let receiptLines     = "테스트 출력\nSERIAL OK";
@@ -448,7 +456,7 @@
   let sectionText      = "Order info";
   let wrapEnabled      = true;
   let wrapTextValue    = "This memo is automatically wrapped by the configured columns";
-  let wrapIndent       = 2;
+  let wrapIndent       = 0;
   let truncateEnabled  = true;
   let truncateTextValue = "ABCDEFGHIJKLMN";
   let truncateWidth    = 12;
@@ -2051,6 +2059,51 @@
     }
   }
 
+  // 현재 선택된 대상의 ESC/POS 또는 OS 기반 상태를 조회
+  async function checkStatus(type) {
+    pending.diagnose = true;
+
+    try {
+      const result = await postJson("/api/status", { target: buildTarget(type) });
+
+      diagStatus = result?.status ?? null;
+      addLog("success", `${type} status`, result);
+    } catch (error) {
+      diagStatus = null;
+      addLog("fail", `${type} status failed`, getErrorDetail(error));
+    } finally {
+      pending.diagnose = false;
+    }
+  }
+
+  // 현재 선택된 대상의 용지 너비와 계산된 columns를 조회 (시스템 너비 우선 옵션 포함)
+  async function checkPaperInfo(type) {
+    pending.diagnose = true;
+
+    try {
+      const result = await postJson("/api/paper-info", {
+        target        : buildTarget(type),
+        useSystemWidth: diagUseSystemWidth,
+        font          : diagFont,
+        paper         : diagPaper || undefined
+      });
+
+      diagPaperInfo = result?.paperInfo ?? null;
+
+      // 조회된 columns를 영수증 빌더에 바로 반영해 출력 폭을 맞춤
+      if (Number.isInteger(diagPaperInfo?.columns)) {
+        receiptColumns = diagPaperInfo.columns;
+      }
+
+      addLog("success", `${type} paper info`, result);
+    } catch (error) {
+      diagPaperInfo = null;
+      addLog("fail", `${type} paper info failed`, getErrorDetail(error));
+    } finally {
+      pending.diagnose = false;
+    }
+  }
+
   // fetch 오류 객체에서 로그 상세에 필요한 값만 추림
   function getErrorDetail(error) {
     return {
@@ -2715,6 +2768,68 @@
       </label>
     </div>
 
+    <section class="diagnostics" aria-label="Status and paper diagnostics">
+      <div class="diagnostics-head">
+        <strong>Status / Paper ({activeTab})</strong>
+        <span class="diag-hint">
+          {activeTab === "usb" ? "system spooler" : "ESC/POS realtime"}
+        </span>
+      </div>
+
+      <div class="diagnostics-controls">
+        <label class="field short-field">
+          <span>font</span>
+          <select bind:value={diagFont}>
+            <option value="a">A</option>
+            <option value="b">B</option>
+          </select>
+        </label>
+
+        <label class="field short-field">
+          <span>paper</span>
+          <select bind:value={diagPaper}>
+            <option value="">auto/none</option>
+            <option value="58mm">58mm</option>
+            <option value="80mm">80mm</option>
+          </select>
+        </label>
+
+        <label class="method-toggle diag-toggle" title="winspool/cups는 시스템 너비 사용">
+          <input bind:checked={diagUseSystemWidth} type="checkbox">
+          <span>useSystemWidth</span>
+        </label>
+      </div>
+
+      <div class="diagnostics-actions">
+        <button type="button" class="secondary-button" disabled={pending.diagnose} on:click={() => checkStatus(activeTab)}>
+          {pending.diagnose ? t("loading") : "Get status"}
+        </button>
+        <button type="button" class="secondary-button" disabled={pending.diagnose} on:click={() => checkPaperInfo(activeTab)}>
+          {pending.diagnose ? t("loading") : "Get paper info"}
+        </button>
+      </div>
+
+      {#if diagStatus}
+        <div class="diagnostics-result">
+          <span class="diag-tag" class:warn={diagStatus.online === false}>online: {String(diagStatus.online ?? "?")}</span>
+          <span class="diag-tag" class:warn={diagStatus.paperOut}>paperOut: {String(diagStatus.paperOut ?? "?")}</span>
+          <span class="diag-tag" class:warn={diagStatus.coverOpen}>coverOpen: {String(diagStatus.coverOpen ?? "?")}</span>
+          <span class="diag-tag" class:warn={diagStatus.error}>error: {String(diagStatus.error ?? "?")}</span>
+          <span class="diag-tag">source: {diagStatus.source}</span>
+        </div>
+      {/if}
+
+      {#if diagPaperInfo}
+        <div class="diagnostics-result">
+          <span class="diag-tag strong">columns: {diagPaperInfo.columns}</span>
+          <span class="diag-tag">source: {diagPaperInfo.source}</span>
+          {#if diagPaperInfo.widthMm}<span class="diag-tag">{diagPaperInfo.widthMm}mm</span>{/if}
+          {#if diagPaperInfo.printableWidthDots}<span class="diag-tag">{diagPaperInfo.printableWidthDots}dots</span>{/if}
+          {#if diagPaperInfo.dpi}<span class="diag-tag">{diagPaperInfo.dpi}dpi</span>{/if}
+        </div>
+      {/if}
+    </section>
+
     <div id="panel-serial" class:hidden-panel={activeTab !== "serial"} class="target-tab" role="tabpanel" aria-labelledby="tab-serial" tabindex="0">
       <div class="target-head">
         <div>
@@ -3330,6 +3445,91 @@
     color: inherit;
     font-size: 11px;
     font-weight: 800;
+  }
+
+  .diagnostics {
+    display: grid;
+    gap: 10px;
+    margin: 0 24px 8px;
+    padding: 14px 16px;
+    background: #fbfcfe;
+    border: 1px solid #eef1f5;
+    border-radius: 14px;
+  }
+
+  .diagnostics-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .diagnostics-head strong {
+    color: #141922;
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .diag-hint {
+    color: #8b95a1;
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .diagnostics-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 0.6fr) minmax(0, 0.6fr) minmax(0, 1fr);
+    gap: 10px;
+    align-items: end;
+  }
+
+  .diag-toggle {
+    min-height: 36px;
+    padding: 0 10px;
+    background: #ffffff;
+    border: 1px solid #e5e8eb;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  .diag-toggle:has(input:checked) {
+    color: #1b64da;
+    background: #f7fbff;
+    border-color: #9ac7ff;
+  }
+
+  .diagnostics-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .diagnostics-actions button {
+    flex: 1;
+  }
+
+  .diagnostics-result {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .diag-tag {
+    padding: 4px 8px;
+    color: #4e5968;
+    font-size: 11px;
+    font-weight: 800;
+    background: #eef2f7;
+    border-radius: 8px;
+  }
+
+  .diag-tag.strong {
+    color: #1b64da;
+    background: #eaf3ff;
+  }
+
+  .diag-tag.warn {
+    color: #c2410c;
+    background: #fff1e7;
   }
 
   .target-head {

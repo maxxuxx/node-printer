@@ -1,6 +1,6 @@
 import { PrinterError } from "#core";
 
-export type SerialOperation = "open" | "write" | "drain" | "close";
+export type SerialOperation = "open" | "write" | "drain" | "close" | "read";
 
 // Error normalization
 

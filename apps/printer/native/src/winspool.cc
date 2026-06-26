@@ -639,6 +639,49 @@ napi_value GetDefaultPrinterWindows(napi_env env, PromiseState state) {
   return Resolve(env, state, CreateWideString(env, buffer.data()));
 }
 
+// CreateDC + GetDeviceCaps로 드라이버에 설정된 용지 너비 정보를 조회함
+napi_value GetPrinterCapabilitiesWindows(napi_env env, PromiseState state, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value args[1];
+
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+  // printerName 인자가 없으면 native 작업을 만들기 전에 거부함
+  if (argc < 1) {
+    return RejectMessage(env, state, "ERR_INVALID_TARGET", "printerName is required");
+  }
+
+  std::wstring printerName;
+
+  // printerName은 비어 있지 않은 문자열만 허용함
+  if (!ReadWideString(env, args[0], &printerName) || printerName.empty()) {
+    return RejectMessage(env, state, "ERR_INVALID_TARGET", "printerName is required");
+  }
+
+  // 프린터 드라이버 device context를 열어 인쇄 영역 정보를 읽음
+  HDC printerDc = CreateDCW(L"WINSPOOL", printerName.c_str(), nullptr, nullptr);
+
+  // device context 생성 실패는 프린터 접근 단계의 Win32 오류로 반환함
+  if (!printerDc) {
+    return RejectLastWin32Error(env, state, "CreateDCW", printerName);
+  }
+
+  const int printableWidthDots = GetDeviceCaps(printerDc, HORZRES);
+  const int dpi                = GetDeviceCaps(printerDc, LOGPIXELSX);
+  const int widthMm            = GetDeviceCaps(printerDc, HORZSIZE);
+
+  DeleteDC(printerDc);
+
+  napi_value result;
+
+  napi_create_object(env, &result);
+  SetProperty(env, result, "printableWidthDots", CreateNumber(env, printableWidthDots));
+  SetProperty(env, result, "widthMm", CreateNumber(env, widthMm));
+  SetProperty(env, result, "dpi", CreateNumber(env, dpi));
+
+  return Resolve(env, state, result);
+}
+
 // JS printRaw 입력을 검증하고 async worker 요청으로 포장함
 napi_value PrintRawWindows(napi_env env, PromiseState state, napi_callback_info info) {
   size_t argc = 1;
@@ -762,6 +805,18 @@ napi_value PrintRaw(napi_env env, napi_callback_info info) {
 #endif
 }
 
+// JS getPrinterCapabilities 호출을 platform별 구현 또는 unsupported 오류로 연결함
+napi_value GetPrinterCapabilities(napi_env env, napi_callback_info info) {
+  PromiseState state = CreatePromise(env);
+
+#ifdef _WIN32
+  return GetPrinterCapabilitiesWindows(env, state, info);
+#else
+  (void)info;
+  return RejectMessage(env, state, "ERR_UNSUPPORTED_PLATFORM", "getPrinterCapabilities is only supported on Windows");
+#endif
+}
+
 // Module init
 
 // native 모듈 export에 JS에서 호출할 함수들을 등록함
@@ -769,6 +824,7 @@ napi_value Init(napi_env env, napi_value exports) {
   napi_set_named_property(env, exports, "listPrinters", CreateFunction(env, "listPrinters", ListPrinters));
   napi_set_named_property(env, exports, "getDefaultPrinter", CreateFunction(env, "getDefaultPrinter", GetDefaultPrinter));
   napi_set_named_property(env, exports, "printRaw", CreateFunction(env, "printRaw", PrintRaw));
+  napi_set_named_property(env, exports, "getPrinterCapabilities", CreateFunction(env, "getPrinterCapabilities", GetPrinterCapabilities));
 
   return exports;
 }

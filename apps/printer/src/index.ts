@@ -52,4 +52,7 @@ export type {
 } from "./api/printer-settings.js";
 export { listPrinters } from "./api/list-printers.js";
 export { print } from "./api/print.js";
+export { getStatus } from "./api/status.js";
+export { getPaperInfo, resolveColumns } from "./api/paper.js";
+export type { PaperInfoOptions } from "./api/paper.js";
 export type { ListPrinterType, PrinterListResult, PrinterMethodOptions } from "./api/types.js";

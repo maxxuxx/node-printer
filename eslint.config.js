@@ -14,5 +14,29 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/consistent-type-imports": "error"
     }
+  },
+  // 패키지 빌드 스크립트는 CommonJS Node 파일로 처리합니다
+  {
+    files: ["apps/printer/scripts/**/*.cjs"],
+    languageOptions: {
+      globals: {
+        __dirname    : "readonly",
+        __filename   : "readonly",
+        Buffer       : "readonly",
+        clearInterval: "readonly",
+        clearTimeout : "readonly",
+        console      : "readonly",
+        exports      : "readonly",
+        module       : "readonly",
+        process      : "readonly",
+        require      : "readonly",
+        setInterval  : "readonly",
+        setTimeout   : "readonly"
+      },
+      sourceType: "commonjs"
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off"
+    }
   }
 );

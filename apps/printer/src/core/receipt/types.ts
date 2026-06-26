@@ -44,6 +44,10 @@ export type ImageMode           = "normal" | "double-width" | "double-height" | 
 export interface ReceiptOptions {
   columns?: number;
   encoding?: ReceiptEncoding;
+  // 용지 프리셋으로 columns를 자동 계산합니다 (columns 명시 시 무시)
+  paper?: "58mm" | "80mm";
+  // columns 자동 계산에 사용할 폰트 폭 기준입니다
+  font?: ReceiptFont;
 }
 
 export interface ReceiptTextOptions {

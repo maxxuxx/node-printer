@@ -10,5 +10,9 @@
       "#winspool": ["./apps/printer/src/transports/winspool/index.ts"]
     }
   },
-  "include": ["apps/printer/src/**/*.ts", "apps/printer/test/**/*.ts"]
+  "include": [
+    "apps/printer/src/**/*.ts",
+    "apps/printer/test/**/*.ts",
+    "apps/test-server/ui/src/**/*.svelte"
+  ]
 }

@@ -11,6 +11,9 @@
 | `createReceipt(options?)`          | ESC/POS 영수증 바이트를 체인 방식으로 생성                            |
 | `print(target, data, options?)`    | `Uint8Array` 데이터를 serial, network, CUPS, Winspool target으로 출력 |
 | `listPrinters(type, options?)`     | serial, usb, network 프린터 목록 조회                                 |
+| `getStatus(target, options?)`      | 프린터 상태 조회 (online, 용지 없음, 커버 열림, 오류 등)              |
+| `getPaperInfo(target, options?)`   | 용지 너비와 그에 맞는 영수증 `columns` 계산                          |
+| `resolveColumns(target, options?)` | 계산된 `columns` 값만 반환                                            |
 | `configurePrinterSettings(config)` | 저장 프린터 JSON 파일 경로 설정                                       |
 | `savePrinter(input)`               | 프린터 target과 영수증 profile 저장                                   |
 | `listSavedPrinters()`              | 저장된 프린터 전체 조회                                               |
@@ -189,6 +192,103 @@ const printers = await listPrinters("network", {
 });
 ```
 
+## getStatus
+
+`getStatus(target, options?)`는 `PrinterStatus`를 반환합니다
+
+조회 출처는 target에 따라 다릅니다. serial과 network는 ESC/POS 실시간 상태 명령(`DLE EOT`)을 사용하고, winspool과 cups는 ESC/POS 없이 OS 스풀러 상태를 읽습니다
+
+```ts
+import { getStatus } from "@maxxuxx/node-printer";
+
+const status = await getStatus({ type: "winspool", printerName: "Receipt" });
+
+console.log(status.online, status.paperOut, status.coverOpen);
+```
+
+```ts
+interface PrinterStatus {
+  target: PrinterTarget;
+  source: "escpos" | "winspool" | "cups";
+  online?: boolean;
+  paperOut?: boolean;
+  paperNearEnd?: boolean;
+  coverOpen?: boolean;
+  paperJam?: boolean;
+  drawerOpen?: boolean;
+  error?: boolean;
+  paused?: boolean;
+  busy?: boolean;
+  raw?: Record<string, number | string | boolean>;
+}
+```
+
+각 boolean 값은 해당 출처가 보고하지 못하면 `undefined`로 남아, `undefined`(알 수 없음)와 `false`(정상)를 구분합니다
+
+| target              | source       | 동작                                                          |
+| ------------------- | ------------ | ------------------------------------------------------------- |
+| `serial`/`network`  | `"escpos"`   | `DLE EOT 1~4`를 보내고 응답 바이트를 디코딩                    |
+| `winspool`          | `"winspool"` | Windows Spooler `PRINTER_STATUS` 비트 플래그 디코딩           |
+| `cups`              | `"cups"`     | `lpstat -l -p` 상태 문구와 `printer-state-reasons` 파싱       |
+
+serial과 network 상태 조회는 ESC/POS 실시간 상태를 지원하는 프린터가 필요하며, 응답이 없으면 timeout 오류를 던집니다
+
+## getPaperInfo
+
+`getPaperInfo(target, options?)`는 인쇄 가능한 용지 너비와 사용할 영수증 `columns`를 계산합니다
+
+```ts
+import { getPaperInfo, createReceipt } from "@maxxuxx/node-printer";
+
+const info = await getPaperInfo({ type: "winspool", printerName: "Receipt" });
+
+const receipt = createReceipt({ columns: info.columns, encoding: "cp949" })
+  .text("너비 기반 출력")
+  .cut()
+  .encode();
+```
+
+```ts
+interface PaperInfo {
+  target: PrinterTarget;
+  source: "system" | "manual" | "default";
+  font: "a" | "b";
+  columns: number;
+  widthMm?: number;
+  printableWidthDots?: number;
+  dpi?: number;
+}
+```
+
+`columns`는 다음 우선순위로 결정됩니다
+
+1. 명시한 `options.columns` (source `"manual"`)
+2. `useSystemWidth`가 켜져 있을 때 시스템 드라이버 너비, `winspool`과 `cups`만 해당 (source `"system"`)
+3. 수동 `options.paper` 프리셋 또는 측정값 (source `"manual"`)
+4. 기본값 `42` (source `"default"`)
+
+| option           | 기본값  | 의미                                                             |
+| ---------------- | ------- | ---------------------------------------------------------------- |
+| `useSystemWidth` | `true`  | `winspool`과 `cups`에서 OS 드라이버 너비를 조회                  |
+| `font`           | `"a"`   | 도트 → columns 계산에 사용할 폰트 폭 기준                        |
+| `paper`          | -       | 수동 `"58mm"`/`"80mm"` 프리셋 또는 `{ widthMm, printableWidthDots, dpi }` |
+| `columns`        | -       | `columns`를 강제하고 모든 자동 감지를 건너뜀                     |
+
+serial과 network 직접 연결은 시스템 너비를 읽을 수 없으므로 `paper` 또는 기본값으로 폴백합니다
+
+`resolveColumns(target, options?)`는 `columns`만 반환하는 편의 함수입니다
+
+```ts
+import { resolveColumns, createReceipt } from "@maxxuxx/node-printer";
+
+const columns = await resolveColumns(
+  { type: "winspool", printerName: "Receipt" },
+  { font: "a" }
+);
+
+const receipt = createReceipt({ columns }).text("Sized").cut().encode();
+```
+
 ## createReceipt
 
 `createReceipt(options?)`는 `ReceiptBuilder`를 반환합니다
@@ -200,10 +300,20 @@ const receipt = createReceipt({
 });
 ```
 
-| option     | 기본값   | 의미                                            |
-| ---------- | -------- | ----------------------------------------------- |
-| `columns`  | `42`     | 한 줄 문자 폭                                   |
-| `encoding` | `"utf8"` | 문자열을 ESC/POS 바이트로 바꿀 때 사용할 인코딩 |
+| option     | 기본값   | 의미                                                            |
+| ---------- | -------- | --------------------------------------------------------------- |
+| `columns`  | `42`     | 한 줄 문자 폭                                                   |
+| `encoding` | `"utf8"` | 문자열을 ESC/POS 바이트로 바꿀 때 사용할 인코딩                 |
+| `paper`    | -        | `columns`를 생략했을 때 `columns`를 계산하는 `"58mm"`/`"80mm"` 프리셋 |
+| `font`     | `"a"`    | `paper`로 `columns`를 계산할 때 쓰는 폰트 폭 기준               |
+
+시스템 너비를 읽을 수 없는 serial이나 IP 직접 연결은 `paper`로 너비를 수동 선언합니다
+
+```ts
+const receipt = createReceipt({ paper: "80mm", encoding: "cp949" }); // columns가 48로 계산됨
+```
+
+winspool이나 cups 시스템 프린터는 `getPaperInfo`로 드라이버에서 `columns`를 구해 넘깁니다
 
 지원 인코딩, 주 사용 국가, ESC/POS code page 참고는 [인코딩 문서](encoding.kr.md)를 확인합니다
 
