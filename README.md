@@ -112,6 +112,23 @@ const usbPrinters = await listPrinters("usb");
 const networkPrinters = await listPrinters("network");
 ```
 
+Check printer status and resolve receipt width from the selected target
+
+```ts
+import { createReceipt, getPaperInfo, getStatus } from "@maxxuxx/node-printer";
+
+const target = { type: "winspool", printerName: "Receipt" } as const;
+const status = await getStatus(target);
+const paperInfo = await getPaperInfo(target);
+
+const receipt = createReceipt({ columns: paperInfo.columns, encoding: "cp949" })
+  .text(status.online === false ? "PRINTER OFFLINE" : "READY")
+  .cut()
+  .encode();
+```
+
+For direct serial or network printers, use `createReceipt({ paper: "80mm" })` when driver width is unavailable
+
 ## Prebuild
 
 The published package ships bundled serial and Windows Spooler native prebuilds

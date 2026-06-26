@@ -45,6 +45,8 @@ npm install @maxxuxx/node-printer
 | Serial COM or tty             | ✅ Available | Works on Windows, macOS, Linux, and Android prebuild targets |
 | CUPS printing                 | ✅ Available | Works on macOS and Linux                    |
 | Windows Spooler RAW           | ✅ Available | Works on Windows with bundled prebuilds     |
+| Printer status                | ✅ Available | Uses ESC/POS for serial and network, OS spooler for CUPS and Winspool |
+| Paper width columns           | ✅ Available | Resolves columns from driver width, paper preset, or manual columns |
 | Winspool on non-Windows       | ❌ Not used  | Throws `ERR_UNSUPPORTED_PLATFORM`           |
 | npm source build fallback     | ❌ Not used  | Published installs expect bundled prebuilds |
 
@@ -68,6 +70,30 @@ await print({
   port: 9100
 }, receipt);
 ```
+
+## Status and Paper Width
+
+```ts
+import { createReceipt, getPaperInfo, getStatus, print } from "@maxxuxx/node-printer";
+
+const target = { type: "winspool", printerName: "Receipt" } as const;
+
+const status = await getStatus(target);
+
+if (status.online !== false && !status.paperOut) {
+  const info = await getPaperInfo(target);
+  const receipt = createReceipt({ columns: info.columns, encoding: "cp949" })
+    .text("Width-aware print")
+    .cut()
+    .encode();
+
+  await print(target, receipt);
+}
+```
+
+Serial and network status use ESC/POS real-time status commands, while CUPS and Winspool read OS spooler status
+
+Use `createReceipt({ paper: "80mm" })` when the printer is connected directly and no driver width is available
 
 ## Choose a Printer
 

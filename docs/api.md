@@ -11,6 +11,9 @@ Individual transport factory functions from internal source aliases such as `#se
 | `createReceipt(options?)`          | Builds ESC/POS receipt bytes with a chainable builder             |
 | `print(target, data, options?)`    | Prints `Uint8Array` data to serial, network, CUPS, or Winspool    |
 | `listPrinters(type, options?)`     | Lists serial, usb, or network printers                            |
+| `getStatus(target, options?)`      | Reads printer status such as online, paper out, cover open, error |
+| `getPaperInfo(target, options?)`   | Resolves paper width and receipt `columns`                        |
+| `resolveColumns(target, options?)` | Returns only the resolved `columns` value                         |
 | `configurePrinterSettings(config)` | Configures the saved printer JSON file path                       |
 | `savePrinter(input)`               | Saves a printer target and receipt profile                        |
 | `listSavedPrinters()`              | Lists all saved printers                                          |

@@ -34,6 +34,8 @@ npm install @maxxuxx/node-printer
 | Serial COM 또는 tty          | ✅ 가능  | Windows, macOS, Linux에서 bundled prebuild로 동작 |
 | CUPS 출력                    | ✅ 가능  | macOS, Linux에서 사용 가능             |
 | Windows Spooler RAW        | ✅ 가능  | Windows에서 bundled prebuild로 동작   |
+| 프린터 상태 조회             | ✅ 가능  | serial과 network는 ESC/POS, CUPS와 Winspool은 OS spooler 사용 |
+| 용지 폭 columns 계산         | ✅ 가능  | 드라이버 너비, 용지 프리셋, 수동 columns 순으로 결정 |
 | macOS 또는 Linux Winspool    | ❌ 불가능 | `ERR_UNSUPPORTED_PLATFORM` throw |
 | npm install 중 source build | ❌ 미제공 | 배포 패키지는 bundled prebuild를 기대     |
 
@@ -58,6 +60,30 @@ await print({
   port: 9100
 }, receipt);
 ```
+
+## 상태와 용지 폭
+
+```ts
+import { createReceipt, getPaperInfo, getStatus, print } from "@maxxuxx/node-printer";
+
+const target = { type: "winspool", printerName: "Receipt" } as const;
+
+const status = await getStatus(target);
+
+if (status.online !== false && !status.paperOut) {
+  const info = await getPaperInfo(target);
+  const receipt = createReceipt({ columns: info.columns, encoding: "cp949" })
+    .text("용지 폭 기반 출력")
+    .cut()
+    .encode();
+
+  await print(target, receipt);
+}
+```
+
+serial과 network 상태 조회는 ESC/POS 실시간 상태 명령을 사용하고, CUPS와 Winspool은 OS spooler 상태를 읽습니다
+
+직접 연결 프린터처럼 드라이버 너비를 읽을 수 없을 때는 `createReceipt({ paper: "80mm" })`로 용지 폭을 수동 지정합니다
 
 ## 프린터 선택
 

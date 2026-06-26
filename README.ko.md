@@ -100,6 +100,23 @@ const usbPrinters = await listPrinters("usb");
 const networkPrinters = await listPrinters("network");
 ```
 
+선택한 target에서 프린터 상태를 확인하고 영수증 폭을 계산할 수 있습니다
+
+```ts
+import { createReceipt, getPaperInfo, getStatus } from "@maxxuxx/node-printer";
+
+const target = { type: "winspool", printerName: "Receipt" } as const;
+const status = await getStatus(target);
+const paperInfo = await getPaperInfo(target);
+
+const receipt = createReceipt({ columns: paperInfo.columns, encoding: "cp949" })
+  .text(status.online === false ? "PRINTER OFFLINE" : "READY")
+  .cut()
+  .encode();
+```
+
+직접 연결 serial이나 network 프린터처럼 드라이버 너비를 읽을 수 없을 때는 `createReceipt({ paper: "80mm" })`를 사용합니다
+
 ## Prebuild
 
 Windows Spooler 패키지는 bundled N-API prebuild를 포함합니다

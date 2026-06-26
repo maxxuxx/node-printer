@@ -25,6 +25,8 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm install
 npm exec --yes --package pnpm@11.1.1 -- pnpm build
 ```
 
+The build command also regenerates the static UI in `apps/test-server/public`
+
 Run the test server
 
 ```powershell
@@ -56,6 +58,7 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 
 - Server health and transport capability checks
 - Serial, USB, and Network target discovery
+- Status and paper width diagnostics for the selected target
 - Receipt lines, encoding, width, divider, feed, cut, and copies controls
 - QR, barcode, and image example data
 - Encoded hex and bytes preview
@@ -72,6 +75,8 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 | `GET`  | `/api/network/printers`  | Scan local IPv4 subnet for network printers |
 | `POST` | `/api/receipt/encode`    | Encode receipt input into ESC/POS bytes  |
 | `POST` | `/api/print`             | Print a receipt to the selected target   |
+| `POST` | `/api/status`            | Read status for the selected target      |
+| `POST` | `/api/paper-info`        | Resolve paper width and receipt columns  |
 
 If `/api/health` returns `ok: false`, build the repository first
 
@@ -116,6 +121,24 @@ Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/receipt/encode -Co
 ```
 
 The response includes `byteLength`, `hex`, and `bytes`
+
+## Status and Paper Info
+
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/status -ContentType 'application/json' -Body '{
+  "target": { "type": "winspool", "printerName": "Receipt" }
+}'
+```
+
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/paper-info -ContentType 'application/json' -Body '{
+  "target": { "type": "winspool", "printerName": "Receipt" },
+  "font": "a",
+  "paper": "80mm"
+}'
+```
+
+`/api/status` returns the normalized printer status, and `/api/paper-info` returns the resolved `columns`
 
 ## Print
 

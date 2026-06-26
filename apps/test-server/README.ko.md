@@ -25,6 +25,8 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm install
 npm exec --yes --package pnpm@11.1.1 -- pnpm build
 ```
 
+빌드 명령은 `apps/test-server/public`의 정적 UI도 함께 다시 생성합니다
+
 테스트 서버를 실행합니다
 
 ```powershell
@@ -56,6 +58,7 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 
 - 서버 health와 transport capability 확인
 - Serial, USB, Network 대상 목록 조회
+- 선택한 target의 상태와 용지 폭 진단
 - 영수증 본문, 인코딩, 폭, 구분선, feed, cut, 출력 매수 설정
 - QR, barcode, image 예제 데이터 포함
 - 인코딩 결과 hex와 bytes 확인
@@ -72,6 +75,8 @@ npm exec --yes --package pnpm@11.1.1 -- pnpm test-server
 | `GET`  | `/api/network/printers`  | 로컬 IPv4 대역의 network 프린터 스캔   |
 | `POST` | `/api/receipt/encode`    | 영수증 입력을 ESC/POS bytes로 인코딩   |
 | `POST` | `/api/print`             | 선택한 target으로 영수증 출력          |
+| `POST` | `/api/status`            | 선택한 target의 상태 조회              |
+| `POST` | `/api/paper-info`        | 용지 폭과 영수증 columns 계산          |
 
 `/api/health`의 `ok`가 `false`이면 먼저 빌드를 실행합니다
 
@@ -116,6 +121,24 @@ Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/receipt/encode -Co
 ```
 
 응답은 `byteLength`, `hex`, `bytes`를 포함합니다
+
+## 상태와 용지 정보
+
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/status -ContentType 'application/json' -Body '{
+  "target": { "type": "winspool", "printerName": "Receipt" }
+}'
+```
+
+```powershell
+Invoke-RestMethod -Method POST -Uri http://localhost:3007/api/paper-info -ContentType 'application/json' -Body '{
+  "target": { "type": "winspool", "printerName": "Receipt" },
+  "font": "a",
+  "paper": "80mm"
+}'
+```
+
+`/api/status`는 정규화된 프린터 상태를 반환하고, `/api/paper-info`는 계산된 `columns`를 반환합니다
 
 ## 출력
 

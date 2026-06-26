@@ -14,6 +14,9 @@ on:
       - "eslint.config.js"
       - "vitest.config.ts"
       - ".github/workflows/ci.yml"
+      - "!**/*.md"
+      - "!**/*.mdx"
+      - "!apps/test-server/public/**"
   pull_request:
     paths:
       - "apps/**"
@@ -25,6 +28,9 @@ on:
       - "eslint.config.js"
       - "vitest.config.ts"
       - ".github/workflows/ci.yml"
+      - "!**/*.md"
+      - "!**/*.mdx"
+      - "!apps/test-server/public/**"
 
 jobs:
   test:
