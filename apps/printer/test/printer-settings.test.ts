@@ -112,6 +112,70 @@ describe("printer settings", () => {
     await printer.clearSavedPrinters();
     await expect(printer.listSavedPrinters()).resolves.toEqual([]);
   });
+
+  it("updates a saved printer while keeping the id", async () => {
+    const { filePath, printer } = await loadConfiguredPrinterModule();
+    const saved = await printer.savePrinter({
+      name    : "Serial",
+      type    : "serial",
+      path    : "COM3",
+      baudRate: 9600,
+      receipt : {
+        encoding: "cp949",
+        columns : 32
+      }
+    });
+
+    const updated = await printer.updatePrinter(saved.id, {
+      name   : "Kitchen",
+      type   : "network",
+      host   : "192.168.0.50",
+      port   : 9100,
+      receipt: {
+        encoding: "cp949",
+        columns : 42
+      }
+    });
+
+    expect(updated).toEqual({
+      id     : saved.id,
+      name   : "Kitchen",
+      type   : "network",
+      target : {
+        type: "network",
+        host: "192.168.0.50",
+        port: 9100
+      },
+      receipt: {
+        encoding: "cp949",
+        columns : 42
+      }
+    });
+    await expect(printer.getSavedPrinter(saved.id)).resolves.toEqual(updated);
+    await expect(printer.listSavedPrinters()).resolves.toEqual([updated]);
+
+    const file = JSON.parse(await readFile(filePath, "utf8")) as { printers: unknown[] };
+
+    expect(file.printers).toEqual([updated]);
+  });
+
+  it("throws when updating a missing printer", async () => {
+    const { printer } = await loadConfiguredPrinterModule();
+
+    await expect(printer.updatePrinter("missing", {
+      name    : "Serial",
+      type    : "serial",
+      path    : "COM3",
+      baudRate: 9600,
+      receipt : {
+        encoding: "cp949",
+        columns : 42
+      }
+    })).rejects.toMatchObject({
+      code   : "ERR_PRINTER_NOT_FOUND",
+      message: "Saved printer was not found: missing"
+    });
+  });
 });
 
 // Test helpers

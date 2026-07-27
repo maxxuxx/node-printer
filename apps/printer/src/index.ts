@@ -38,7 +38,8 @@ export {
   getSavedPrinter,
   listSavedPrinters,
   removeSavedPrinter,
-  savePrinter
+  savePrinter,
+  updatePrinter
 } from "./api/printer-settings.js";
 export type {
   PrinterSettingsConfig,

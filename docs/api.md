@@ -16,6 +16,7 @@ Individual transport factory functions from internal source aliases such as `#se
 | `resolveColumns(target, options?)` | Returns only the resolved `columns` value                         |
 | `configurePrinterSettings(config)` | Configures the saved printer JSON file path                       |
 | `savePrinter(input)`               | Saves a printer target and receipt profile                        |
+| `updatePrinter(id, input)`         | Updates a saved printer while keeping its id                      |
 | `listSavedPrinters()`              | Lists all saved printers                                          |
 | `getSavedPrinter(id)`              | Reads one saved printer                                           |
 | `removeSavedPrinter(id)`           | Removes one saved printer                                         |
@@ -477,6 +478,7 @@ Call `configurePrinterSettings` with a JSON file path before using saved printer
 import {
   configurePrinterSettings,
   savePrinter,
+  updatePrinter,
   listSavedPrinters,
   getSavedPrinter,
   print,
@@ -508,6 +510,17 @@ await print(saved.target, receipt);
 
 const printers = await listSavedPrinters();
 const first = await getSavedPrinter(saved.id);
+
+await updatePrinter(saved.id, {
+  name: "Kitchen",
+  type: "network",
+  host: "192.168.0.50",
+  port: 9100,
+  receipt: {
+    encoding: "cp949",
+    columns: 42
+  }
+});
 ```
 
 If the settings file does not exist, the API starts with an empty list and creates the required directory when saving
@@ -567,6 +580,7 @@ await savePrinter({
 | ---------------------------------------- | ------------------------------------ | ---------------------------------- |
 | `configurePrinterSettings({ filePath })` | `void`                               | Configures the saved JSON path     |
 | `savePrinter(input)`                     | `Promise<SavedPrinter>`              | Saves printer and receipt profile  |
+| `updatePrinter(id, input)`               | `Promise<SavedPrinter>`              | Updates a saved printer by id      |
 | `listSavedPrinters()`                    | `Promise<SavedPrinter[]>`            | Lists saved printers               |
 | `getSavedPrinter(id)`                    | `Promise<SavedPrinter \| undefined>` | Reads one saved printer by id      |
 | `removeSavedPrinter(id)`                 | `Promise<void>`                      | Removes one saved printer by id    |

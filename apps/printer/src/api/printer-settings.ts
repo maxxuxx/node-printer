@@ -80,15 +80,28 @@ export function configurePrinterSettings(config: PrinterSettingsConfig): void {
 
 export async function savePrinter(input: SavePrinterInput): Promise<SavedPrinter> {
   const settings = await readSettingsFile();
-  const saved: SavedPrinter = {
-    id     : randomUUID(),
-    name   : normalizeName(input.name),
-    type   : input.type,
-    target : createSavedPrinterTarget(input),
-    receipt: normalizeReceiptProfile(input.receipt)
-  };
+  const saved    = createSavedPrinter(randomUUID(), input);
 
   settings.printers.push(saved);
+  await writeSettingsFile(settings);
+
+  return saved;
+}
+
+export async function updatePrinter(id: string, input: SavePrinterInput): Promise<SavedPrinter> {
+  const settings     = await readSettingsFile();
+  const printerIndex = settings.printers.findIndex((printer) => printer.id === id);
+
+  if (printerIndex === -1) {
+    throw new PrinterError({
+      code   : "ERR_PRINTER_NOT_FOUND",
+      message: `Saved printer was not found: ${id}`
+    });
+  }
+
+  const saved = createSavedPrinter(id, input);
+
+  settings.printers[printerIndex] = saved;
   await writeSettingsFile(settings);
 
   return saved;
@@ -145,6 +158,16 @@ function getSettingsFilePath(): string {
 }
 
 // Input conversion
+
+function createSavedPrinter(id: string, input: SavePrinterInput): SavedPrinter {
+  return {
+    id,
+    name   : normalizeName(input.name),
+    type   : input.type,
+    target : createSavedPrinterTarget(input),
+    receipt: normalizeReceiptProfile(input.receipt)
+  };
+}
 
 function createSavedPrinterTarget(input: SavePrinterInput): PrinterTarget {
   switch (input.type) {
