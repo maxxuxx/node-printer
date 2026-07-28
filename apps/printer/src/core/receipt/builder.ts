@@ -52,6 +52,27 @@ import { assertScale } from "./validators.js";
 // Receipt builder
 
 const DEFAULT_COLUMNS = 42;
+const WINDOWS_1258_SHAPE_MARKS = new Set(["\u0302", "\u0306", "\u031b"]);
+const WINDOWS_1258_VIETNAMESE_MARKS = new Set([
+  "\u0300",
+  "\u0301",
+  "\u0302",
+  "\u0303",
+  "\u0306",
+  "\u0309",
+  "\u031b",
+  "\u0323"
+]);
+const WINDOWS_1258_SHAPED_BASES: Record<string, Record<string, string>> = {
+  A: { "\u0302": "\u00c2", "\u0306": "\u0102" },
+  E: { "\u0302": "\u00ca" },
+  O: { "\u0302": "\u00d4", "\u031b": "\u01a0" },
+  U: { "\u031b": "\u01af" },
+  a: { "\u0302": "\u00e2", "\u0306": "\u0103" },
+  e: { "\u0302": "\u00ea" },
+  o: { "\u0302": "\u00f4", "\u031b": "\u01a1" },
+  u: { "\u031b": "\u01b0" }
+};
 
 interface ReceiptConfig {
   columns: number;
@@ -85,6 +106,46 @@ function resolveColumns(options: ReceiptOptions): number {
   }
 
   return DEFAULT_COLUMNS;
+}
+
+function normalizeTextForEncoding(value: string, encoding: ReceiptEncoding): string {
+  if (encoding === "utf8" || encoding === "ascii") {
+    return value;
+  }
+
+  if (encoding === "windows-1258") {
+    return normalizeWindows1258Text(value);
+  }
+
+  return value.normalize("NFC");
+}
+
+function normalizeWindows1258Text(value: string): string {
+  const chars = Array.from(value.normalize("NFD"));
+  let   output = "";
+
+  for (let index = 0; index < chars.length; index += 1) {
+    const char  = chars[index] ?? "";
+    const marks: string[] = [];
+
+    while (WINDOWS_1258_VIETNAMESE_MARKS.has(chars[index + 1] ?? "")) {
+      marks.push(chars[index + 1] ?? "");
+      index += 1;
+    }
+
+    const shapeMark = marks.find((mark) => WINDOWS_1258_SHAPE_MARKS.has(mark));
+    const shaped    = shapeMark ? WINDOWS_1258_SHAPED_BASES[char]?.[shapeMark] : undefined;
+
+    output += shaped ?? char;
+
+    for (const mark of marks) {
+      if (mark !== shapeMark) {
+        output += mark;
+      }
+    }
+  }
+
+  return output;
 }
 
 class EscPosReceiptBuilder implements ReceiptBuilder {
@@ -497,7 +558,7 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
       return this.encoder.encode(value);
     }
 
-    return Uint8Array.from(iconv.encode(value, encoding));
+    return Uint8Array.from(iconv.encode(normalizeTextForEncoding(value, encoding), encoding));
   }
 
   private command(...bytes: number[]): this {
