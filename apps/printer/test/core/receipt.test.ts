@@ -54,6 +54,33 @@ const CANONICAL_RECEIPT_ENCODING_SAMPLES: Partial<Record<ReceiptEncoding, string
   "windows-1258": "C\u1ea3m \u01a1n qu\u00fd kh\u00e1ch"
 };
 
+const LEFT_RIGHT_RECEIPT_ENCODING_SAMPLES: Partial<Record<ReceiptEncoding, string>> = {
+  ascii         : "Discount",
+  cp437         : "Caf\u00e9",
+  cp850         : "Caf\u00e9",
+  cp852         : "Za\u017c\u00f3\u0142\u0107",
+  cp858         : "Caf\u00e9",
+  cp860         : "a\u00e7\u00e3o",
+  cp863         : "fran\u00e7ais",
+  cp865         : "bl\u00e5b\u00e6r",
+  cp866         : "\u041f\u0440\u0438\u0432\u0435\u0442",
+  cp932         : "\u65e5\u672c\u8a9e",
+  cp949         : "\ud55c\uae00",
+  cp950         : "\u7e41\u9ad4\u4e2d\u6587",
+  big5          : "\u7e41\u9ad4\u4e2d\u6587",
+  gb18030       : "\u7b80\u4f53\u4e2d\u6587",
+  "windows-874" : "\u0e2a\u0e27\u0e31\u0e2a\u0e14\u0e35",
+  "windows-1250": "Za\u017c\u00f3\u0142\u0107",
+  "windows-1251": "\u041f\u0440\u0438\u0432\u0435\u0442",
+  "windows-1252": "Caf\u00e9",
+  "windows-1253": "\u039a\u03b1\u03bb\u03b7\u03bc\u03ad\u03c1\u03b1",
+  "windows-1254": "\u0130stanbul",
+  "windows-1255": "\u05e9\u05dc\u05d5\u05dd",
+  "windows-1256": "\u0623\u0647\u0644\u0627",
+  "windows-1257": "\u0100\u017euolas",
+  "windows-1258": "Gi\u1ea3m gi\u00e1"
+};
+
 // 영수증 빌더가 생성하는 핵심 ESC/POS 바이트 계약을 검증합니다
 describe("createReceipt", () => {
   it("encodes printable text for every supported receipt encoding", () => {
@@ -72,6 +99,18 @@ describe("createReceipt", () => {
 
       expect(Array.from(textBytes)).not.toContain(0x3f);
       expect(decoded.normalize("NFC")).toBe(sample.normalize("NFC"));
+    }
+  });
+
+  it("keeps left-right rows within configured byte columns for supported printer encodings", () => {
+    const entries = Object.entries(LEFT_RIGHT_RECEIPT_ENCODING_SAMPLES) as [ReceiptEncoding, string][];
+
+    for (const [encoding, sample] of entries) {
+      const bytes = createReceipt({ columns: 20, encoding })
+        .leftRight(sample, "1")
+        .encode();
+
+      expect(bytes.subarray(0, -1)).toHaveLength(20);
     }
   });
 

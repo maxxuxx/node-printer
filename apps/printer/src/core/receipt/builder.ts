@@ -16,6 +16,7 @@ import {
   truncateText,
   wrapText
 } from "./layout.js";
+import type { TextMetrics } from "./layout.js";
 import type {
   CutMode,
   ReceiptAmountOptions,
@@ -195,13 +196,14 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   }
 
   row(columns: ReceiptColumn[]): this {
-    const line = columns.map((column) => formatColumn(column)).join("");
+    const metrics = this.textMetrics();
+    const line    = columns.map((column) => formatColumn(column, metrics)).join("");
 
     return this.text(line, { newLine: true });
   }
 
   divider(options: string | ReceiptDividerOptions = "-"): this {
-    return this.text(formatDivider(this.config.columns, options), { newLine: true });
+    return this.text(formatDivider(this.config.columns, options, this.textMetrics()), { newLine: true });
   }
 
   blank(lines = 1): this {
@@ -217,8 +219,9 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   wrap(value: string, options: ReceiptWrapOptions = {}): this {
     const width       = options.width ?? this.config.columns;
     const textOptions = this.textOptions(options);
+    const metrics     = this.textMetrics();
 
-    for (const line of wrapText(value, width, options)) {
+    for (const line of wrapText(value, width, options, metrics)) {
       this.text(line, textOptions);
     }
 
@@ -229,15 +232,17 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
     const width       = options.width ?? this.config.columns;
     const textOptions = this.textOptions(options);
 
-    return this.text(truncateText(value, width, options.ellipsis), textOptions);
+    return this.text(truncateText(value, width, options.ellipsis, this.textMetrics()), textOptions);
   }
 
   leftRight(left: string, right: string, options: ReceiptLeftRightOptions = {}): this {
     const width       = options.width ?? this.config.columns;
-    const rightText   = truncateText(right, width, "");
-    const leftWidth   = Math.max(0, width - measureTextWidth(rightText));
-    const leftText    = leftWidth > 0 ? truncateText(left, leftWidth, "") : "";
-    const spaceCount  = Math.max(0, width - measureTextWidth(leftText) - measureTextWidth(rightText));
+    const metrics     = this.textMetrics();
+    const measure     = metrics.measure;
+    const rightText   = truncateText(right, width, "", metrics);
+    const leftWidth   = Math.max(0, width - measure(rightText));
+    const leftText    = leftWidth > 0 ? truncateText(left, leftWidth, "", metrics) : "";
+    const spaceCount  = Math.max(0, width - measure(leftText) - measure(rightText));
     const textOptions = this.textOptions(options);
 
     return this.text(`${leftText}${" ".repeat(spaceCount)}${rightText}`, textOptions);
@@ -254,7 +259,8 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
       return this.row(columns);
     }
 
-    const wrapped = columns.map((column) => wrapText(column.text, column.width));
+    const metrics = this.textMetrics();
+    const wrapped = columns.map((column) => wrapText(column.text, column.width, {}, metrics));
     const rows    = Math.max(...wrapped.map((lines) => lines.length));
 
     for (let row = 0; row < rows; row += 1) {
@@ -343,7 +349,7 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
   title(value: string, options: ReceiptTitleOptions = {}): this {
     const width = options.width ?? this.config.columns;
 
-    return this.text(formatText(value, width, options.align ?? "center"), {
+    return this.text(formatText(value, width, options.align ?? "center", this.textMetrics()), {
       bold     : options.bold,
       underline: options.underline
     });
@@ -529,6 +535,20 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
       align    : options.align,
       bold     : options.bold,
       underline: options.underline
+    };
+  }
+
+  private textMetrics(): TextMetrics {
+    if (this.currentEncoding !== "windows-1258") {
+      return {
+        measure: measureTextWidth,
+        units  : (value) => Array.from(value)
+      };
+    }
+
+    return {
+      measure: (value) => this.encodeText(value, "windows-1258").length,
+      units  : (value) => Array.from(value.normalize("NFC"))
     };
   }
 

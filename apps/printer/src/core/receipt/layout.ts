@@ -8,43 +8,62 @@ import type {
 
 // Text layout
 
-export function formatColumn(column: ReceiptColumn): string {
-  const text = truncateText(column.text, column.width, "");
+export interface TextMetrics {
+  measure(value: string): number;
+  units(value: string): string[];
+}
+
+const DEFAULT_TEXT_METRICS: TextMetrics = {
+  measure: measureTextWidth,
+  units  : (value) => Array.from(value)
+};
+
+export function formatColumn(column: ReceiptColumn, metrics: TextMetrics = DEFAULT_TEXT_METRICS): string {
+  const text = truncateText(column.text, column.width, "", metrics);
 
   if (column.align === "right") {
-    return `${" ".repeat(Math.max(0, column.width - measureTextWidth(text)))}${text}`;
+    return `${" ".repeat(Math.max(0, column.width - metrics.measure(text)))}${text}`;
   }
 
   if (column.align === "center") {
-    const remaining = column.width - measureTextWidth(text);
+    const remaining = column.width - metrics.measure(text);
     const left      = Math.floor(remaining / 2);
     const right     = remaining - left;
 
     return `${" ".repeat(left)}${text}${" ".repeat(right)}`;
   }
 
-  return `${text}${" ".repeat(Math.max(0, column.width - measureTextWidth(text)))}`;
+  return `${text}${" ".repeat(Math.max(0, column.width - metrics.measure(text)))}`;
 }
 
-export function formatText(value: string, width: number, align: TextAlign = "left"): string {
-  const text = truncateText(value, width, "");
+export function formatText(
+  value: string,
+  width: number,
+  align: TextAlign = "left",
+  metrics: TextMetrics = DEFAULT_TEXT_METRICS
+): string {
+  const text = truncateText(value, width, "", metrics);
 
   if (align === "right") {
-    return `${" ".repeat(Math.max(0, width - measureTextWidth(text)))}${text}`;
+    return `${" ".repeat(Math.max(0, width - metrics.measure(text)))}${text}`;
   }
 
   if (align === "center") {
-    const remaining = width - measureTextWidth(text);
+    const remaining = width - metrics.measure(text);
     const left      = Math.floor(remaining / 2);
     const right     = remaining - left;
 
     return `${" ".repeat(left)}${text}${" ".repeat(right)}`;
   }
 
-  return `${text}${" ".repeat(Math.max(0, width - measureTextWidth(text)))}`;
+  return `${text}${" ".repeat(Math.max(0, width - metrics.measure(text)))}`;
 }
 
-export function formatDivider(width: number, options: string | ReceiptDividerOptions = "-"): string {
+export function formatDivider(
+  width: number,
+  options: string | ReceiptDividerOptions = "-",
+  metrics: TextMetrics = DEFAULT_TEXT_METRICS
+): string {
   const normalized = typeof options === "string" ? { char: options } : options;
   const size       = normalized.width ?? width;
   const mark       = Array.from(normalized.char ?? "-")[0] ?? "-";
@@ -55,26 +74,32 @@ export function formatDivider(width: number, options: string | ReceiptDividerOpt
     return mark.repeat(size);
   }
 
-  return formatTextWithFill(normalized.text, size, mark, normalized.align ?? "center");
+  return formatTextWithFill(normalized.text, size, mark, normalized.align ?? "center", metrics);
 }
 
-export function truncateText(value: string, width: number, ellipsis = "..."): string {
+export function truncateText(
+  value: string,
+  width: number,
+  ellipsis = "...",
+  metrics: TextMetrics = DEFAULT_TEXT_METRICS
+): string {
   assertPositiveWidth(width, "Text width");
 
-  if (measureTextWidth(value) <= width) {
+  if (metrics.measure(value) <= width) {
     return value;
   }
 
-  const suffix = takeColumns(ellipsis, width);
-  const keep   = Math.max(0, width - measureTextWidth(suffix));
+  const suffix = takeColumns(ellipsis, width, metrics);
+  const keep   = Math.max(0, width - metrics.measure(suffix));
 
-  return `${takeColumns(value, keep)}${suffix}`;
+  return `${takeColumns(value, keep, metrics)}${suffix}`;
 }
 
 export function wrapText(
   value: string,
   width: number,
-  options: { indent?: number; breakWords?: boolean } = {}
+  options: { indent?: number; breakWords?: boolean } = {},
+  metrics: TextMetrics = DEFAULT_TEXT_METRICS
 ): string[] {
   assertPositiveWidth(width, "Wrap width");
 
@@ -82,7 +107,9 @@ export function wrapText(
   const breakWords = options.breakWords ?? true;
   const lines      = String(value)
     .split(/\r?\n/)
-    .flatMap((paragraph, index) => wrapParagraph(paragraph, width, index === 0 ? 0 : indent, indent, breakWords));
+    .flatMap((paragraph, index) =>
+      wrapParagraph(paragraph, width, index === 0 ? 0 : indent, indent, breakWords, metrics)
+    );
 
   return lines.length > 0 ? lines : [""];
 }
@@ -107,7 +134,8 @@ function wrapParagraph(
   width: number,
   firstIndent: number,
   nextIndent: number,
-  breakWords: boolean
+  breakWords: boolean,
+  metrics: TextMetrics
 ): string[] {
   const words  = paragraph.split(/\s+/).filter((word) => word.length > 0);
   const lines  = [];
@@ -123,8 +151,8 @@ function wrapParagraph(
     const limit  = Math.max(1, width - indent);
 
     if (!current) {
-      if (measureTextWidth(word) > limit && breakWords) {
-        const pieces = splitWord(word, limit);
+      if (metrics.measure(word) > limit && breakWords) {
+        const pieces = splitWord(word, limit, metrics);
 
         lines.push(`${prefix}${pieces[0]}`);
         lines.push(...pieces.slice(1, -1).map((piece) => `${" ".repeat(nextIndent)}${piece}`));
@@ -137,7 +165,7 @@ function wrapParagraph(
       continue;
     }
 
-    if (measureTextWidth(`${current} ${word}`) <= limit) {
+    if (metrics.measure(`${current} ${word}`) <= limit) {
       current = `${current} ${word}`;
       continue;
     }
@@ -145,8 +173,8 @@ function wrapParagraph(
     lines.push(`${prefix}${current}`);
     indent  = nextIndent;
 
-    if (measureTextWidth(word) > Math.max(1, width - indent) && breakWords) {
-      const pieces = splitWord(word, Math.max(1, width - indent));
+    if (metrics.measure(word) > Math.max(1, width - indent) && breakWords) {
+      const pieces = splitWord(word, Math.max(1, width - indent), metrics);
 
       lines.push(...pieces.slice(0, -1).map((piece) => `${" ".repeat(indent)}${piece}`));
       current = pieces.at(-1) ?? "";
@@ -162,13 +190,13 @@ function wrapParagraph(
   return lines;
 }
 
-function splitWord(value: string, width: number): string[] {
+function splitWord(value: string, width: number, metrics: TextMetrics): string[] {
   const pieces = [];
   let current  = "";
   let size     = 0;
 
-  for (const char of Array.from(value)) {
-    const charWidth = charColumnWidth(char);
+  for (const char of metrics.units(value)) {
+    const charWidth = metrics.measure(char);
 
     if (current && size + charWidth > width) {
       pieces.push(current);
@@ -187,9 +215,15 @@ function splitWord(value: string, width: number): string[] {
   return pieces;
 }
 
-function formatTextWithFill(value: string, width: number, fill: string, align: TextAlign): string {
-  const text      = truncateText(value, width, "");
-  const remaining = Math.max(0, width - measureTextWidth(text));
+function formatTextWithFill(
+  value: string,
+  width: number,
+  fill: string,
+  align: TextAlign,
+  metrics: TextMetrics
+): string {
+  const text      = truncateText(value, width, "", metrics);
+  const remaining = Math.max(0, width - metrics.measure(text));
 
   if (align === "left") {
     return `${text}${fill.repeat(remaining)}`;
@@ -214,12 +248,12 @@ function assertPositiveWidth(width: number, name: string): void {
   }
 }
 
-function takeColumns(value: string, width: number): string {
+function takeColumns(value: string, width: number, metrics: TextMetrics): string {
   let result = "";
   let size   = 0;
 
-  for (const char of Array.from(value)) {
-    const charWidth = charColumnWidth(char);
+  for (const char of metrics.units(value)) {
+    const charWidth = metrics.measure(char);
 
     if (size + charWidth > width) {
       break;
