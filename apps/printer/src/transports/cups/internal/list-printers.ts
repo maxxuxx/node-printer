@@ -17,7 +17,7 @@ export async function listCupsPrinters(
     resolved.runner,
     {
       command  : "lpstat",
-      args     : ["-p", "-d"],
+      args     : ["-e", "-p", "-d"],
       timeoutMs: resolved.defaultTimeoutMs
     },
     "lpstat"

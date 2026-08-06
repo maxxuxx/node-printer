@@ -24,7 +24,7 @@ describe("listPrinters discovery types", () => {
     }
 
     const runner = new FakeCupsRunner(
-      "printer Receipt is idle. enabled since today\nsystem default destination: Receipt\n"
+      "Receipt\nprinter Receipt is idle. enabled since today\nsystem default destination: Receipt\n"
     );
 
     await expect(

@@ -38,11 +38,28 @@ system default destination: Receipt_1
     ]);
   });
 
+  it("parses printer names from localized lpstat output", () => {
+    const printers = parseLpstatPrinters(`
+XP_80
+XP_80 프린터가 대기 중입니다.  Thu Aug  6 15:28:34 2026 이후에 활성화됨
+시스템 기본 대상: XP_80
+`);
+
+    expect(printers).toEqual([
+      {
+        name     : "XP_80",
+        isDefault: true,
+        state    : "unknown",
+        raw      : "XP_80"
+      }
+    ]);
+  });
+
   it("lists printers through lpstat", async () => {
     const runner   = new FakeRunner();
     runner.results = [
       {
-        stdout  : "printer Receipt is idle. enabled since today\nsystem default destination: Receipt\n",
+        stdout  : "Receipt\nprinter Receipt is idle. enabled since today\nsystem default destination: Receipt\n",
         stderr  : "",
         exitCode: 0,
         signal  : null
@@ -64,7 +81,7 @@ system default destination: Receipt_1
     ]);
     expect(runner.requests[0]).toMatchObject({
       command: "lpstat",
-      args   : ["-p", "-d"]
+      args   : ["-e", "-p", "-d"]
     });
   });
 
