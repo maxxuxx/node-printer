@@ -9,7 +9,10 @@ import { assertCommandSucceeded, normalizeCupsError } from "./errors.js";
 export class NodeCupsCommandRunner implements CupsCommandRunner {
   run(request: CupsCommandRequest): Promise<CupsCommandResult> {
     return new Promise((resolve, reject) => {
-      const child        = spawn(request.command, request.args, { stdio: ["pipe", "pipe", "pipe"] });
+      const child        = spawn(request.command, request.args, {
+        env  : { ...process.env, LC_ALL: "C" },
+        stdio: ["pipe", "pipe", "pipe"]
+      });
       const stdoutChunks : Buffer[] = [];
       const stderrChunks : Buffer[] = [];
       let timedOut       = false;
