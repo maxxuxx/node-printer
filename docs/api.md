@@ -359,12 +359,25 @@ const receipt = createReceipt({ columns: 42, encoding: "cp949" })
   .columns([
     { text: "Americano", width: 30 },
     { text: "4,500", width: 12, align: "right" }
-  ])
+  ], { wrap: "word" })
   .wrap("Long descriptions wrap across multiple lines at the configured width", {
     width: 42,
-    indent: 2
+    indent: 2,
+    mode: "character"
   })
   .encode();
+```
+
+`word` preserves whitespace-delimited words while `character` fills the available display width before breaking the line
+
+`columns()` and `table()` accept the mode through `wrap` and do not wrap when it is omitted
+
+```ts
+receipt.table({
+  columns: [{ width: 17 }],
+  rows: [["Charcoal spicy sauce chicken mozzarella set"]],
+  wrap: "character"
+});
 ```
 
 ### Amount and order rows

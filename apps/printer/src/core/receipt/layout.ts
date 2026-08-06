@@ -3,6 +3,7 @@ import type {
   ReceiptAmountFormatOptions,
   ReceiptColumn,
   ReceiptDividerOptions,
+  ReceiptWrapMode,
   TextAlign
 } from "./types.js";
 
@@ -98,17 +99,17 @@ export function truncateText(
 export function wrapText(
   value: string,
   width: number,
-  options: { indent?: number; breakWords?: boolean } = {},
+  options: { indent?: number; mode?: ReceiptWrapMode } = {},
   metrics: TextMetrics = DEFAULT_TEXT_METRICS
 ): string[] {
   assertPositiveWidth(width, "Wrap width");
 
-  const indent     = Math.max(0, options.indent ?? 0);
-  const breakWords = options.breakWords ?? true;
-  const lines      = String(value)
+  const indent = Math.max(0, options.indent ?? 0);
+  const mode   = options.mode ?? "word";
+  const lines  = String(value)
     .split(/\r?\n/)
     .flatMap((paragraph, index) =>
-      wrapParagraph(paragraph, width, index === 0 ? 0 : indent, indent, breakWords, metrics)
+      wrapParagraph(paragraph, width, index === 0 ? 0 : indent, indent, mode, metrics)
     );
 
   return lines.length > 0 ? lines : [""];
@@ -134,7 +135,21 @@ function wrapParagraph(
   width: number,
   firstIndent: number,
   nextIndent: number,
-  breakWords: boolean,
+  mode: ReceiptWrapMode,
+  metrics: TextMetrics
+): string[] {
+  if (mode === "character") {
+    return wrapCharacterParagraph(paragraph, width, firstIndent, nextIndent, metrics);
+  }
+
+  return wrapWordParagraph(paragraph, width, firstIndent, nextIndent, metrics);
+}
+
+function wrapWordParagraph(
+  paragraph: string,
+  width: number,
+  firstIndent: number,
+  nextIndent: number,
   metrics: TextMetrics
 ): string[] {
   const words  = paragraph.split(/\s+/).filter((word) => word.length > 0);
@@ -151,7 +166,7 @@ function wrapParagraph(
     const limit  = Math.max(1, width - indent);
 
     if (!current) {
-      if (metrics.measure(word) > limit && breakWords) {
+      if (metrics.measure(word) > limit) {
         const pieces = splitWord(word, limit, metrics);
 
         lines.push(`${prefix}${pieces[0]}`);
@@ -173,7 +188,7 @@ function wrapParagraph(
     lines.push(`${prefix}${current}`);
     indent  = nextIndent;
 
-    if (metrics.measure(word) > Math.max(1, width - indent) && breakWords) {
+    if (metrics.measure(word) > Math.max(1, width - indent)) {
       const pieces = splitWord(word, Math.max(1, width - indent), metrics);
 
       lines.push(...pieces.slice(0, -1).map((piece) => `${" ".repeat(indent)}${piece}`));
@@ -185,6 +200,49 @@ function wrapParagraph(
 
   if (current) {
     lines.push(`${" ".repeat(indent)}${current}`);
+  }
+
+  return lines;
+}
+
+function wrapCharacterParagraph(
+  paragraph: string,
+  width: number,
+  firstIndent: number,
+  nextIndent: number,
+  metrics: TextMetrics
+): string[] {
+  const value   = paragraph.split(/\s+/).filter(Boolean).join(" ");
+  const lines   = [];
+  let current   = "";
+  let size      = 0;
+  let indent    = firstIndent;
+
+  if (!value) {
+    return [" ".repeat(firstIndent)];
+  }
+
+  for (const char of metrics.units(value)) {
+    const charWidth = metrics.measure(char);
+    const limit     = Math.max(1, width - indent);
+
+    if (current && size + charWidth > limit) {
+      lines.push(`${" ".repeat(indent)}${current.trimEnd()}`);
+      current = "";
+      size    = 0;
+      indent  = nextIndent;
+
+      if (!char.trim()) {
+        continue;
+      }
+    }
+
+    current += char;
+    size    += charWidth;
+  }
+
+  if (current) {
+    lines.push(`${" ".repeat(indent)}${current.trimEnd()}`);
   }
 
   return lines;

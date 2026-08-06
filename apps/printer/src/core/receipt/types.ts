@@ -26,6 +26,7 @@ export type ReceiptEncoding =
   | "windows-1258";
 export type ReceiptFont       = "a" | "b";
 export type TextAlign         = "left" | "center" | "right";
+export type ReceiptWrapMode   = "word" | "character";
 export type CutMode           = "full" | "partial";
 export type QrErrorCorrection = "l" | "m" | "q" | "h";
 export type BarcodeType =
@@ -73,7 +74,7 @@ export interface ReceiptDividerOptions {
 export interface ReceiptWrapOptions extends Omit<ReceiptTextOptions, "newLine"> {
   width?: number;
   indent?: number;
-  breakWords?: boolean;
+  mode?: ReceiptWrapMode;
 }
 
 export interface ReceiptTruncateOptions extends Omit<ReceiptTextOptions, "newLine"> {
@@ -90,7 +91,7 @@ export interface ReceiptKeyValueOptions extends ReceiptLeftRightOptions {
 }
 
 export interface ReceiptColumnsOptions {
-  wrap?: boolean;
+  wrap?: ReceiptWrapMode;
 }
 
 export interface ReceiptTableColumn {
@@ -107,7 +108,7 @@ export interface ReceiptTableOptions {
   columns: ReceiptTableColumn[];
   rows: ReceiptTableRow[];
   divider?: boolean | string | ReceiptDividerOptions;
-  wrap?: boolean;
+  wrap?: ReceiptWrapMode;
 }
 
 export interface ReceiptAmountFormatOptions {

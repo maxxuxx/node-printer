@@ -358,12 +358,25 @@ const receipt = createReceipt({ columns: 42, encoding: "cp949" })
   .columns([
     { text: "Americano", width: 30 },
     { text: "4,500", width: 12, align: "right" }
-  ])
+  ], { wrap: "word" })
   .wrap("긴 설명은 설정한 폭에 맞춰 여러 줄로 나뉩니다", {
     width: 42,
-    indent: 2
+    indent: 2,
+    mode: "character"
   })
   .encode();
+```
+
+`word`는 공백으로 구분한 단어를 유지하고 `character`는 표시 폭을 끝까지 사용해 문자 단위로 줄을 나눕니다
+
+`columns()`와 `table()`은 `wrap`에 모드를 지정하며 생략하면 줄바꿈하지 않습니다
+
+```ts
+receipt.table({
+  columns: [{ width: 17 }],
+  rows: [["숯불 매운 소스 치킨 모짜렐라 세트"]],
+  wrap: "character"
+});
 ```
 
 ### 금액과 주문 행

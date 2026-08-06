@@ -260,7 +260,7 @@ class EscPosReceiptBuilder implements ReceiptBuilder {
     }
 
     const metrics = this.textMetrics();
-    const wrapped = columns.map((column) => wrapText(column.text, column.width, {}, metrics));
+    const wrapped = columns.map((column) => wrapText(column.text, column.width, { mode: options.wrap }, metrics));
     const rows    = Math.max(...wrapped.map((lines) => lines.length));
 
     for (let row = 0; row < rows; row += 1) {

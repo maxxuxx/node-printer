@@ -40,7 +40,7 @@ function buildReceiptLines(receipt) {
   if (receipt.divider) lines.push("  .divider()");
   if (receipt.titleEnabled) lines.push(`  .title(${formatValue(receipt.titleText)})`);
   if (receipt.sectionEnabled) lines.push(`  .section(${formatValue(receipt.sectionText)})`);
-  if (receipt.wrapEnabled) lines.push(`  .wrap(${formatValue(receipt.wrapTextValue)}, ${formatInlineObject({ indent: Number(receipt.wrapIndent) })})`);
+  if (receipt.wrapEnabled) lines.push(`  .wrap(${formatValue(receipt.wrapTextValue)}, ${formatInlineObject({ indent: Number(receipt.wrapIndent), mode: "word" })})`);
   if (receipt.truncateEnabled) lines.push(`  .truncate(${formatValue(receipt.truncateTextValue)}, ${formatInlineObject({ width: Number(receipt.truncateWidth) })})`);
   if (receipt.blankEnabled) lines.push(`  .blank(${Number(receipt.blankLines)})`);
   if (String(receipt.dividerText ?? "").trim()) {
@@ -48,7 +48,7 @@ function buildReceiptLines(receipt) {
   }
   if (receipt.leftRightEnabled) lines.push(`  .leftRight(${formatValue(receipt.leftRightLeft)}, ${formatValue(receipt.leftRightRight)})`);
   if (receipt.keyValueEnabled) lines.push(`  .keyValue(${formatValue(receipt.keyValueLabel)}, ${formatValue(receipt.keyValueValue)})`);
-  if (receipt.columnsEnabled) lines.push(`  .columns(${formatInlineColumns(receipt)}, { wrap: true })`);
+  if (receipt.columnsEnabled) lines.push(`  .columns(${formatInlineColumns(receipt)}, { wrap: "word" })`);
   if (receipt.tableEnabled) lines.push(`  .table(${formatInlineTable(receipt)})`);
   if (receipt.itemsEnabled) lines.push(`  .items(${formatInlineItems()}, ${formatInlineObject({ unit: receipt.amountUnit })})`);
   if (receipt.totalsEnabled) lines.push(`  .totals(${formatInlineTotals()}, ${formatInlineObject({ unit: receipt.amountUnit })})`);
@@ -152,6 +152,7 @@ function formatInlineTable(receipt) {
       { title: "Amount", width: 12, align: "right" }
     ],
     divider: true,
+    wrap: "word",
     rows: [
       ["Latte", "5500"],
       ["Cookie", "2500"]

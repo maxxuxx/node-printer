@@ -151,7 +151,7 @@ describe("createReceipt", () => {
 
   it("wraps text to the configured width", () => {
     const bytes = createReceipt({ columns: 8, encoding: "ascii" })
-      .wrap("one two three", { indent: 2 })
+      .wrap("one two three", { indent: 2, mode: "word" })
       .encode();
 
     expect(new TextDecoder().decode(bytes)).toBe("one two\n  three\n");
@@ -179,11 +179,23 @@ describe("createReceipt", () => {
           { text: "Apple Pie", width: 8 },
           { text: "1000", width: 4, align: "right" }
         ],
-        { wrap: true }
+        { wrap: "word" }
       )
       .encode();
 
     expect(new TextDecoder().decode(bytes)).toBe("Apple   1000\nPie         \n");
+  });
+
+  it("fills the remaining table width in character wrap mode", () => {
+    const preview = createReceipt({ columns: 17, encoding: "cp949" })
+      .table({
+        columns: [{ width: 17 }],
+        rows   : [["숯불 매운 소스 치킨 모짜렐라 세트"]],
+        wrap   : "character"
+      })
+      .preview();
+
+    expect(preview).toBe("숯불 매운 소스 치\n킨 모짜렐라 세트 \n");
   });
 
   it("builds tables, item rows, totals, and formatted amounts", () => {

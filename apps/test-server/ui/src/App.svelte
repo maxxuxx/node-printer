@@ -927,7 +927,8 @@
       blocks.push({
         type  : "wrap",
         text  : wrapTextValue,
-        indent: Number(wrapIndent)
+        indent: Number(wrapIndent),
+        mode  : "word"
       });
     }
 
@@ -973,7 +974,7 @@
     if (columnsEnabled) {
       blocks.push({
         type   : "columns",
-        wrap   : true,
+        wrap   : "word",
         columns: [
           { text: columnLeft, width: Math.max(1, Number(receiptColumns) - 12) },
           { text: columnRight, width: 12, align: "right" }
@@ -985,6 +986,7 @@
       blocks.push({
         type   : "table",
         divider: true,
+        wrap   : "word",
         columns: [
           { title: "Name", width: Math.max(1, Number(receiptColumns) - 12) },
           { title: "Amount", width: 12, align: "right" }

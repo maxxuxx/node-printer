@@ -35,6 +35,7 @@ export type {
   ReceiptTotalRow,
   ReceiptTotalsOptions,
   ReceiptTruncateOptions,
+  ReceiptWrapMode,
   ReceiptWrapOptions,
   TextAlign
 } from "./types.js";
