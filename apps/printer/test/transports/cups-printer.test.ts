@@ -59,6 +59,12 @@ XP_80 프린터가 대기 중입니다.  Thu Aug  6 15:28:34 2026 이후에 활�
     const runner   = new FakeRunner();
     runner.results = [
       {
+        stdout  : "Receipt\n",
+        stderr  : "",
+        exitCode: 0,
+        signal  : null
+      },
+      {
         stdout  : "Receipt\nprinter Receipt is idle. enabled since today\nsystem default destination: Receipt\n",
         stderr  : "",
         exitCode: 0,
@@ -79,10 +85,41 @@ XP_80 프린터가 대기 중입니다.  Thu Aug  6 15:28:34 2026 이후에 활�
         raw      : "printer Receipt is idle. enabled since today"
       }
     ]);
-    expect(runner.requests[0]).toMatchObject({
-      command: "lpstat",
-      args   : ["-e", "-p", "-d"]
-    });
+    expect(runner.requests).toMatchObject([
+      {
+        command: "lpstat",
+        args   : ["-e"]
+      },
+      {
+        command: "lpstat",
+        args   : ["-e", "-p", "-d"]
+      }
+    ]);
+  });
+
+  it("returns an empty list when CUPS has no destinations", async () => {
+    const runner   = new FakeRunner();
+    runner.results = [
+      {
+        stdout  : "",
+        stderr  : "",
+        exitCode: 0,
+        signal  : null
+      }
+    ];
+
+    await expect(
+      listCupsPrinters({
+        runner,
+        platform: "darwin"
+      })
+    ).resolves.toEqual([]);
+    expect(runner.requests).toMatchObject([
+      {
+        command: "lpstat",
+        args   : ["-e"]
+      }
+    ]);
   });
 
   it("prints raw bytes with lp by default", async () => {

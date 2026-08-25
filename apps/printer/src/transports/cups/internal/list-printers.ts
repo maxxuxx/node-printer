@@ -13,6 +13,21 @@ export async function listCupsPrinters(
 
   assertSupportedPlatform(resolved.platform);
 
+  const destinations = await runCupsCommand(
+    resolved.runner,
+    {
+      command  : "lpstat",
+      args     : ["-e"],
+      timeoutMs: resolved.defaultTimeoutMs
+    },
+    "lpstat"
+  );
+
+  // lpstat -p exits with code 1 when CUPS has no destinations, which is a valid empty result.
+  if (!destinations.stdout.trim()) {
+    return [];
+  }
+
   const result = await runCupsCommand(
     resolved.runner,
     {
