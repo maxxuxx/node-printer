@@ -77,17 +77,19 @@ jobs:
         run: |
           expected="${{ steps.package.outputs.version }}"
 
-          for attempt in 1 2 3 4 5 6; do
-            actual="$(npm view "${{ steps.package.outputs.name }}@$expected" version 2>/dev/null || true)"
+          for attempt in $(seq 1 30); do
+            actual="$(npm view "${{ steps.package.outputs.name }}@$expected" version --prefer-online 2>/dev/null || true)"
 
             if [ "$actual" = "$expected" ]; then
               exit 0
             fi
 
-            sleep 5
+            if [ "$attempt" -lt 30 ]; then
+              sleep 10
+            fi
           done
 
-          echo "npm registry did not expose $expected within 30 seconds" >&2
+          echo "npm registry did not expose $expected within 5 minutes" >&2
           exit 1
 
       - name: Skip existing version
