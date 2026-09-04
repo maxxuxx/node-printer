@@ -4,7 +4,7 @@
 
 Unified ESC/POS receipt printer API for Node.js and Electron
 
-This package provides one entry point for serial, network, CUPS, and Windows Spooler printers
+This package provides one entry point for serial, network, system queue, Bluetooth, CUPS, and Windows Spooler printers
 
 Transport packages are lazy-loaded so importing the package does not immediately load platform-specific native modules
 
@@ -16,7 +16,7 @@ Transport packages are lazy-loaded so importing the package does not immediately
 | Language       | TypeScript                             |
 | Module output  | ESM and CommonJS                       |
 | Receipt output | ESC/POS bytes                          |
-| Transports     | Network, Serial, CUPS, Windows Spooler |
+| Transports     | Network, Serial, System, Bluetooth, CUPS, Windows Spooler |
 | Native loading | Lazy import with bundled prebuilds     |
 
 ## Install
@@ -45,6 +45,9 @@ npm install @maxxuxx/node-printer
 | Serial COM or tty             | ✅ Available | Works on Windows, macOS, Linux, and Android prebuild targets |
 | CUPS printing                 | ✅ Available | Works on macOS and Linux                    |
 | Windows Spooler RAW           | ✅ Available | Works on Windows with bundled prebuilds     |
+| System queue                  | ✅ Available | Resolves to Winspool on Windows and CUPS on macOS/Linux |
+| Bluetooth SPP/system queue    | ✅ Available | Reuses Serial or system transports          |
+| Bluetooth LE                  | ✅ Adapter-based | Requires a device profile and injected adapter |
 | Printer status                | ✅ Available | Uses ESC/POS for serial and network, OS spooler for CUPS and Winspool |
 | Paper width columns           | ✅ Available | Resolves columns from driver width, paper preset, or manual columns |
 | Winspool on non-Windows       | ❌ Not used  | Throws `ERR_UNSUPPORTED_PLATFORM`           |

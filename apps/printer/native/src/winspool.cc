@@ -330,6 +330,28 @@ napi_value CreatePrinterInfo(napi_env env, const PRINTER_INFO_2W& info) {
   return object;
 }
 
+// JOB_INFO_2W를 JS에서 조회할 수 있는 print job 객체로 옮김
+napi_value CreateJobInfo(napi_env env, const JOB_INFO_2W& info) {
+  napi_value object;
+
+  napi_create_object(env, &object);
+  SetProperty(env, object, "jobId", CreateUint32(env, info.JobId));
+  SetProperty(env, object, "status", CreateUint32(env, info.Status));
+  SetProperty(env, object, "position", CreateUint32(env, info.Position));
+  SetProperty(env, object, "totalPages", CreateUint32(env, info.TotalPages));
+  SetProperty(env, object, "pagesPrinted", CreateUint32(env, info.PagesPrinted));
+
+  if (info.pDocument) {
+    SetProperty(env, object, "documentName", CreateWideString(env, info.pDocument));
+  }
+
+  if (info.pStatus) {
+    SetProperty(env, object, "statusText", CreateWideString(env, info.pStatus));
+  }
+
+  return object;
+}
+
 // Buffer와 Uint8Array 계열 data 입력을 native byte 포인터로 읽음
 bool ReadDataProperty(napi_env env, napi_value object, const uint8_t** data, size_t* length) {
   napi_value value;
@@ -682,6 +704,65 @@ napi_value GetPrinterCapabilitiesWindows(napi_env env, PromiseState state, napi_
   return Resolve(env, state, result);
 }
 
+// printerName과 jobId로 현재 Winspool 작업 상태를 조회함
+napi_value GetJobInfoWindows(napi_env env, PromiseState state, napi_callback_info info) {
+  size_t argc = 2;
+  napi_value args[2];
+
+  napi_get_cb_info(env, info, &argc, args, nullptr, nullptr);
+
+  if (argc < 2) {
+    return RejectMessage(env, state, "ERR_INVALID_TARGET", "printerName and jobId are required");
+  }
+
+  std::wstring printerName;
+  uint32_t jobId = 0;
+
+  if (!ReadWideString(env, args[0], &printerName) || printerName.empty()) {
+    return RejectMessage(env, state, "ERR_INVALID_TARGET", "printerName is required");
+  }
+
+  if (napi_get_value_uint32(env, args[1], &jobId) != napi_ok || jobId == 0) {
+    return RejectMessage(env, state, "ERR_INVALID_TARGET", "jobId must be a positive integer");
+  }
+
+  HANDLE printerHandle = nullptr;
+
+  if (!OpenPrinterW(const_cast<LPWSTR>(printerName.c_str()), &printerHandle, nullptr)) {
+    return RejectLastWin32Error(env, state, "OpenPrinterW", printerName);
+  }
+
+  DWORD needed = 0;
+  GetJobW(printerHandle, jobId, 2, nullptr, 0, &needed);
+  const DWORD probeError = GetLastError();
+
+  // 완료되어 spooler에서 제거된 job은 null로 반환함
+  if (probeError == ERROR_INVALID_PARAMETER || probeError == ERROR_FILE_NOT_FOUND) {
+    ClosePrinter(printerHandle);
+    napi_value nullValue;
+    napi_get_null(env, &nullValue);
+    return Resolve(env, state, nullValue);
+  }
+
+  if (needed == 0 || probeError != ERROR_INSUFFICIENT_BUFFER) {
+    ClosePrinter(printerHandle);
+    return RejectLastWin32Error(env, state, "GetJobW", printerName, probeError);
+  }
+
+  std::vector<BYTE> buffer(needed);
+
+  if (!GetJobW(printerHandle, jobId, 2, buffer.data(), needed, &needed)) {
+    const DWORD getJobError = GetLastError();
+    ClosePrinter(printerHandle);
+    return RejectLastWin32Error(env, state, "GetJobW", printerName, getJobError);
+  }
+
+  const auto* jobInfo = reinterpret_cast<const JOB_INFO_2W*>(buffer.data());
+  napi_value result = CreateJobInfo(env, *jobInfo);
+  ClosePrinter(printerHandle);
+  return Resolve(env, state, result);
+}
+
 // JS printRaw 입력을 검증하고 async worker 요청으로 포장함
 napi_value PrintRawWindows(napi_env env, PromiseState state, napi_callback_info info) {
   size_t argc = 1;
@@ -817,6 +898,18 @@ napi_value GetPrinterCapabilities(napi_env env, napi_callback_info info) {
 #endif
 }
 
+// JS getJobInfo 호출을 platform별 구현 또는 unsupported 오류로 연결함
+napi_value GetJobInfo(napi_env env, napi_callback_info info) {
+  PromiseState state = CreatePromise(env);
+
+#ifdef _WIN32
+  return GetJobInfoWindows(env, state, info);
+#else
+  (void)info;
+  return RejectMessage(env, state, "ERR_UNSUPPORTED_PLATFORM", "getJobInfo is only supported on Windows");
+#endif
+}
+
 // Module init
 
 // native 모듈 export에 JS에서 호출할 함수들을 등록함
@@ -825,6 +918,7 @@ napi_value Init(napi_env env, napi_value exports) {
   napi_set_named_property(env, exports, "getDefaultPrinter", CreateFunction(env, "getDefaultPrinter", GetDefaultPrinter));
   napi_set_named_property(env, exports, "printRaw", CreateFunction(env, "printRaw", PrintRaw));
   napi_set_named_property(env, exports, "getPrinterCapabilities", CreateFunction(env, "getPrinterCapabilities", GetPrinterCapabilities));
+  napi_set_named_property(env, exports, "getJobInfo", CreateFunction(env, "getJobInfo", GetJobInfo));
 
   return exports;
 }

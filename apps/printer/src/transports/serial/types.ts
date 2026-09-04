@@ -1,4 +1,4 @@
-import type { SerialPrinterTarget } from "#core";
+import type { PrintResult, SerialPrinterTarget } from "#core";
 
 export interface SerialPortInfo {
   path         : string;
@@ -53,11 +53,6 @@ export type SerialCallback = (error?: Error | null) => void;
 
 export type SerialPrinter = {
   readonly target: SerialPrinterTarget;
-  print(data: Uint8Array): Promise<{
-    ok          : true;
-    target      : SerialPrinterTarget;
-    bytesWritten: number;
-    durationMs  : number;
-  }>;
+  print(data: Uint8Array): Promise<PrintResult>;
   close(): Promise<void>;
 };

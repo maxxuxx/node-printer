@@ -1,10 +1,13 @@
 import {
   PrinterError,
+  enqueuePrinterOperation,
+  type BluetoothPrinterTarget,
   type CupsPrinterTarget,
   type NetworkPrinterTarget,
   type PrinterTarget,
   type PrintResult,
   type SerialPrinterTarget,
+  type SystemPrinterTarget,
   type WinspoolPrinterTarget
 } from "#core";
 
@@ -16,6 +19,14 @@ export async function print(
   target: PrinterTarget,
   data: Uint8Array,
   options: PrinterMethodOptions = {}
+): Promise<PrintResult> {
+  return enqueuePrinterOperation(target, () => printTarget(target, data, options));
+}
+
+async function printTarget(
+  target: PrinterTarget,
+  data: Uint8Array,
+  options: PrinterMethodOptions
 ): Promise<PrintResult> {
   const targetType = target?.type;
 
@@ -60,6 +71,18 @@ export async function print(
         target as WinspoolPrinterTarget,
         options.winspool
       ).print(data);
+    }
+
+    case "system": {
+      const { printSystem } = await import("#system");
+
+      return printSystem(target as SystemPrinterTarget, data, options.system);
+    }
+
+    case "bluetooth": {
+      const { printBluetooth } = await import("#bluetooth");
+
+      return printBluetooth(target as BluetoothPrinterTarget, data, options.bluetooth);
     }
 
     default:

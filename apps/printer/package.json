@@ -1,7 +1,7 @@
 {
   "name": "@maxxuxx/node-printer",
-  "version": "1.6.7",
-  "description": "Unified entry point for ESC/POS receipt printer transports (serial, network, CUPS, Windows Spooler)",
+  "version": "1.6.8",
+  "description": "Unified ESC/POS transports for serial, network, system queues, Bluetooth, CUPS, and Windows Spooler",
   "license": "MIT",
   "homepage": "https://github.com/maxxuxx/node-printer#readme",
   "repository": {
@@ -21,6 +21,7 @@
     "winspool",
     "cups",
     "serial",
+    "bluetooth",
     "tcp"
   ],
   "type": "module",

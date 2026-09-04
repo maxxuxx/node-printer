@@ -3,6 +3,7 @@ import {
   DEFAULT_COLUMNS,
   paperPresetToCapabilities,
   PrinterError,
+  type BluetoothPrinterTarget,
   resolvePrintableDots,
   type CupsPrinterTarget,
   type PaperCapabilities,
@@ -10,6 +11,7 @@ import {
   type PaperPreset,
   type PrinterTarget,
   type ReceiptFont,
+  type SystemPrinterTarget,
   type WinspoolPrinterTarget
 } from "#core";
 
@@ -123,6 +125,23 @@ async function querySystemCapabilities(
     const { getCupsPaperInfo } = await import("#cups");
 
     return getCupsPaperInfo(target as CupsPrinterTarget, options.cups);
+  }
+
+  if (target.type === "system") {
+    const { getSystemPaperInfo } = await import("#system");
+    return getSystemPaperInfo(target as SystemPrinterTarget, options.system);
+  }
+
+  if (target.type === "bluetooth" && target.mode === "system") {
+    const { getSystemPaperInfo } = await import("#system");
+    const bluetooth = target as BluetoothPrinterTarget & { mode: "system" };
+    return getSystemPaperInfo({
+      type        : "system",
+      printerName : bluetooth.printerName,
+      documentName: bluetooth.documentName,
+      timeoutMs   : bluetooth.timeoutMs,
+      backend     : bluetooth.backend
+    }, options.bluetooth?.system);
   }
 
   // serial/network 직접 연결은 시스템 너비를 제공하지 않습니다

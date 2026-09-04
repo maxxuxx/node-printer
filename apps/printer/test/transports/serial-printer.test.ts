@@ -1,14 +1,22 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import { PrinterError } from "#core";
 
-import { createSerialPrinter, listSerialPorts } from "../../src/transports/serial/index.js";
+import {
+  closeAllSerialSessions,
+  createSerialPrinter,
+  listSerialPorts
+} from "../../src/transports/serial/index.js";
 import type {
   SerialOpenOptions,
   SerialPortConnection
 } from "../../src/transports/serial/types.js";
 
 describe("printer-serial", () => {
+  afterEach(async () => {
+    await closeAllSerialSessions().catch(() => undefined);
+  });
+
   it("lists serial ports through the injected binding", async () => {
     const ports = await listSerialPorts({
       SerialPort: FakeSerialPort.withPorts([{ path: "COM3", manufacturer: "Test" }])
@@ -43,6 +51,9 @@ describe("printer-serial", () => {
       rtscts: true
     });
     expect(SerialPort.instances[0]?.written).toEqual([0x00, 0x1b, 0x1d, 0x0a, 0xff]);
+    expect(SerialPort.instances[0]?.closed).toBe(false);
+
+    await printer.close();
     expect(SerialPort.instances[0]?.closed).toBe(true);
   });
 
@@ -81,8 +92,22 @@ describe("printer-serial", () => {
     SerialPort.finishNextWrite();
 
     expect((await second).bytesWritten).toBe(2);
-    expect(SerialPort.instances).toHaveLength(2);
+    expect(SerialPort.instances).toHaveLength(1);
+    await printer.close();
     expect(SerialPort.instances.every((port) => port.closed)).toBe(true);
+  });
+
+  it("writes receipts in 500 byte chunks and keeps one session", async () => {
+    const SerialPort = FakeSerialPort.withPorts([]);
+    const printer = createSerialPrinter({ type: "serial", path: "COM3" }, { SerialPort });
+    const data = new Uint8Array(501).fill(0x41);
+
+    await printer.print(data);
+
+    expect(SerialPort.writeStarts.map((chunk) => chunk.length)).toEqual([500, 1]);
+    expect(SerialPort.instances).toHaveLength(1);
+    expect(SerialPort.instances[0]?.closed).toBe(false);
+    await printer.close();
   });
 
   it("serializes concurrent print calls on the same path across transports", async () => {
@@ -124,7 +149,8 @@ describe("printer-serial", () => {
     SerialPort.finishNextWrite();
 
     expect((await second).bytesWritten).toBe(2);
-    expect(SerialPort.instances).toHaveLength(2);
+    expect(SerialPort.instances).toHaveLength(1);
+    await firstPrinter.close();
   });
 
   it("prints different paths concurrently", async () => {
@@ -238,7 +264,9 @@ describe("printer-serial", () => {
       { SerialPort }
     );
 
-    await expect(printer.print(Uint8Array.from([1]))).rejects.toMatchObject({
+    await printer.print(Uint8Array.from([1]));
+
+    await expect(printer.close()).rejects.toMatchObject({
       code: "ERR_SERIAL_CLOSE_FAILED",
       message: "Serial close failed: close failed",
       retryable: false

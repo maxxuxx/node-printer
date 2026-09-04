@@ -18,7 +18,7 @@ export function enqueueSerialOperation<T>(path: string, run: () => Promise<T>): 
   return operation;
 }
 
-function toQueuePath(path: string): string {
+export function toQueuePath(path: string): string {
   const normalized = path.trim();
 
   if (process.platform !== "win32") {

@@ -2,10 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "paths": {
+      "#bluetooth": ["./src/transports/bluetooth/index.ts"],
       "#core": ["./src/core/index.ts"],
       "#cups": ["./src/transports/cups/index.ts"],
       "#network": ["./src/transports/network/index.ts"],
       "#serial": ["./src/transports/serial/index.ts"],
+      "#system": ["./src/transports/system/index.ts"],
       "#winspool": ["./src/transports/winspool/index.ts"]
     },
     "rootDir": "src",

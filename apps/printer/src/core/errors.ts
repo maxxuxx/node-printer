@@ -26,12 +26,16 @@ export interface PrinterErrorOptions {
   message: string;
   cause?: unknown;
   retryable?: boolean;
+  partial?: boolean;
+  bytesWritten?: number;
 }
 
 // 패키지 전반에서 공유하는 오류 코드와 재시도 가능 여부를 함께 보관합니다
 export class PrinterError extends Error {
   readonly code: PrinterErrorCode;
   readonly retryable: boolean;
+  readonly partial: boolean;
+  readonly bytesWritten?: number;
 
   constructor(options: PrinterErrorOptions) {
     super(options.message, { cause: options.cause });
@@ -39,6 +43,8 @@ export class PrinterError extends Error {
     this.name      = "PrinterError";
     this.code      = options.code;
     this.retryable = options.retryable ?? false;
+    this.partial   = options.partial ?? false;
+    this.bytesWritten = options.bytesWritten;
   }
 }
 

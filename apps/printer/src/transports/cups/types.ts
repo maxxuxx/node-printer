@@ -34,3 +34,16 @@ export interface CupsCommandResult {
   signal  : NodeJS.Signals | null;
   timedOut?: boolean;
 }
+
+export type CupsJobState = "queued" | "completed" | "unknown";
+
+export interface CupsJobStatus {
+  jobId: string;
+  state: CupsJobState;
+  raw  ?: string;
+}
+
+export interface CupsJobMonitorOptions {
+  timeoutMs?: number;
+  pollMs   ?: number;
+}

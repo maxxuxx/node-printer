@@ -29,7 +29,7 @@ export function normalizeNetworkError(
       code     : "ERR_NETWORK_UNREACHABLE",
       message  : withCause("Network destination is unreachable", causeMessage),
       cause    : error,
-      retryable: false
+      retryable: true
     });
   }
 

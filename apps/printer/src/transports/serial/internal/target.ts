@@ -3,7 +3,9 @@ import { PrinterError, type SerialPrinterTarget } from "#core";
 import type { SerialOpenOptions } from "../types.js";
 import {
   DEFAULT_BAUD_RATE,
+  DEFAULT_CHUNK_SIZE,
   DEFAULT_DATA_BITS,
+  DEFAULT_IDLE_CLOSE_MS,
   DEFAULT_PARITY,
   DEFAULT_STOP_BITS,
   DEFAULT_TIMEOUT_MS
@@ -31,7 +33,9 @@ export function normalizeSerialTarget(
     stopBits   : target.stopBits ?? DEFAULT_STOP_BITS,
     parity     : target.parity ?? DEFAULT_PARITY,
     flowControl: target.flowControl ?? false,
-    timeoutMs  : target.timeoutMs ?? DEFAULT_TIMEOUT_MS
+    timeoutMs  : target.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+    chunkSize  : target.chunkSize ?? DEFAULT_CHUNK_SIZE,
+    idleCloseMs: target.idleCloseMs ?? DEFAULT_IDLE_CLOSE_MS
   };
 }
 

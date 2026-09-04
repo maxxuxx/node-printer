@@ -1,10 +1,12 @@
 import {
   PrinterError,
+  type BluetoothPrinterTarget,
   type CupsPrinterTarget,
   type NetworkPrinterTarget,
   type PrinterStatus,
   type PrinterTarget,
   type SerialPrinterTarget,
+  type SystemPrinterTarget,
   type WinspoolPrinterTarget
 } from "#core";
 
@@ -49,6 +51,16 @@ export async function getStatus(
       const { getWinspoolStatus } = await import("#winspool");
 
       return getWinspoolStatus(target as WinspoolPrinterTarget, options.winspool);
+    }
+
+    case "system": {
+      const { getSystemStatus } = await import("#system");
+      return getSystemStatus(target as SystemPrinterTarget, options.system);
+    }
+
+    case "bluetooth": {
+      const { getBluetoothStatus } = await import("#bluetooth");
+      return getBluetoothStatus(target as BluetoothPrinterTarget, options.bluetooth);
     }
 
     default:

@@ -1,4 +1,10 @@
-import { type NetworkPrinterTarget, type PrintResult } from "#core";
+import {
+  ESC_POS_STATUS_QUERY,
+  ESC_POS_STATUS_RESPONSE_BYTES,
+  PrinterError,
+  type NetworkPrinterTarget,
+  type PrintResult
+} from "#core";
 
 import type {
   NetworkPrinterDependencies,
@@ -73,13 +79,21 @@ export class NetworkPrinterTransport {
 
     while (true) {
       try {
-        const bytesWritten = await this.printOnce(data);
+        const result = await this.printOnce(data);
+
+        if (this.target.settleMs > 0) {
+          await this.sleep(this.target.settleMs);
+        }
 
         return {
           ok          : true,
           target      : this.target,
-          bytesWritten,
-          durationMs  : Date.now() - startedAt
+          bytesWritten: result.bytesWritten,
+          durationMs  : Date.now() - startedAt,
+          delivery    : {
+            stage      : result.acknowledged ? "acknowledged" : "transmitted",
+            confirmedBy: result.acknowledged ? "device-status" : "tcp-write"
+          }
         };
       } catch (error) {
         const printerError = normalizeNetworkError(error, "connect");
@@ -160,7 +174,10 @@ export class NetworkPrinterTransport {
     });
   }
 
-  private async printOnce(data: Uint8Array): Promise<number> {
+  private async printOnce(data: Uint8Array): Promise<{
+    bytesWritten: number;
+    acknowledged: boolean;
+  }> {
     const socket = await this.open();
     let written  = 0;
 
@@ -170,12 +187,41 @@ export class NetworkPrinterTransport {
         written += chunk.byteLength;
       }
 
+      let acknowledged = false;
+
+      if (this.target.deliveryMode === "status") {
+        const response = await this.collectResponse(
+          socket,
+          ESC_POS_STATUS_QUERY,
+          ESC_POS_STATUS_RESPONSE_BYTES
+        );
+
+        if (response.byteLength === 0) {
+          throw new PrinterError({
+            code     : "ERR_CONNECTION_TIMEOUT",
+            message  : "Network printer did not respond to the ESC/POS status query",
+            retryable: false
+          });
+        }
+
+        acknowledged = true;
+      }
+
       socket.end();
 
-      return written;
+      return { bytesWritten: written, acknowledged };
     } catch (error) {
       socket.destroy();
-      throw normalizeNetworkError(error, "write");
+      const normalized = normalizeNetworkError(error, "write");
+
+      throw new PrinterError({
+        code        : normalized.code,
+        message     : normalized.message,
+        cause       : normalized.cause,
+        retryable   : false,
+        partial     : written > 0 && written < data.byteLength,
+        bytesWritten: written
+      });
     } finally {
       if (this.socket === socket) {
         this.socket = undefined;

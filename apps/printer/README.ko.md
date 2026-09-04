@@ -4,7 +4,7 @@
 
 통합 ESC/POS 영수증 프린터 API입니다
 
-이 패키지는 serial, network, CUPS, Windows Spooler 프린터를 하나의 진입점으로 제공합니다
+이 패키지는 serial, network, system queue, Bluetooth, CUPS, Windows Spooler 프린터를 하나의 진입점으로 제공합니다
 
 ## 사용 스택
 
@@ -15,7 +15,7 @@
 | Language       | TypeScript                             |
 | Module output  | ESM, CommonJS                          |
 | Receipt output | ESC/POS bytes                          |
-| Transports     | Network, Serial, CUPS, Windows Spooler |
+| Transports     | Network, Serial, System, Bluetooth, CUPS, Windows Spooler |
 | Native loading | Lazy import, bundled prebuild          |
 
 
@@ -34,6 +34,10 @@ npm install @maxxuxx/node-printer
 | Serial COM 또는 tty          | ✅ 가능  | Windows, macOS, Linux에서 bundled prebuild로 동작 |
 | CUPS 출력                    | ✅ 가능  | macOS, Linux에서 사용 가능             |
 | Windows Spooler RAW        | ✅ 가능  | Windows에서 bundled prebuild로 동작   |
+| System queue               | ✅ 가능  | Windows는 Winspool, macOS/Linux는 CUPS로 자동 연결 |
+| Bluetooth SPP              | ✅ 가능  | Serial session을 재사용 |
+| Bluetooth 시스템 큐        | ✅ 가능  | Winspool/CUPS를 재사용 |
+| Bluetooth LE               | ✅ 어댑터 방식 | 장치별 profile과 `BluetoothBleAdapter` 주입 필요 |
 | 프린터 상태 조회             | ✅ 가능  | serial과 network는 ESC/POS, CUPS와 Winspool은 OS spooler 사용 |
 | 용지 폭 columns 계산         | ✅ 가능  | 드라이버 너비, 용지 프리셋, 수동 columns 순으로 결정 |
 | macOS 또는 Linux Winspool    | ❌ 불가능 | `ERR_UNSUPPORTED_PLATFORM` throw |
@@ -86,6 +90,16 @@ serial과 network 상태 조회는 ESC/POS 실시간 상태 명령을 사용하�
 직접 연결 프린터처럼 드라이버 너비를 읽을 수 없을 때는 `createReceipt({ paper: "80mm" })`로 용지 폭을 수동 지정합니다
 
 ## 프린터 선택
+
+### 안정화된 Serial 수명주기
+
+Serial 출력은 같은 path에서 하나의 session을 재사용하고 기본 500바이트 단위로
+순차 전송합니다. `drain()` 이후 전체 byte와 baud rate를 기준으로 포트를 지연
+종료하며 `closePrinter()` 또는 `closeAllPrinters()`로 즉시 정리할 수 있습니다.
+
+`PrintResult.delivery`는 `transmitted`, `spooled`, `acknowledged`를 구분합니다.
+Winspool/CUPS는 반환된 job ID를 `getWinspoolJobStatus()` 또는
+`getCupsJobStatus()`로 조회할 수 있습니다.
 
 ### Serial
 

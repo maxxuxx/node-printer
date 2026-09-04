@@ -1,12 +1,25 @@
 export * from "#core";
 export type {
+  BluetoothBleAdapter,
+  BluetoothBleConnection,
+  BluetoothPrinterDependencies,
+  BluetoothPrinterInfo
+} from "#bluetooth";
+export type {
   CupsCommandRequest,
   CupsCommandResult,
   CupsCommandRunner,
+  CupsJobMonitorOptions,
+  CupsJobState,
+  CupsJobStatus,
   CupsPrintCommand,
   CupsPrinterDependencies,
   CupsPrinterInfo,
   CupsPrinterState
+} from "#cups";
+export {
+  getCupsJobStatus,
+  monitorCupsJob
 } from "#cups";
 export type {
   NetworkConnectionOptions,
@@ -25,11 +38,24 @@ export type {
   SerialPrinterDependencies
 } from "#serial";
 export type {
+  SystemPrinterBackend,
+  SystemPrinterDependencies,
+  SystemPrinterInfo
+} from "#system";
+export type {
   WinspoolBinding,
+  WinspoolJobInfo,
+  WinspoolJobMonitorOptions,
+  WinspoolJobState,
+  WinspoolJobStatus,
   WinspoolNativePrinterInfo,
   WinspoolPrintRawOptions,
   WinspoolPrinter,
   WinspoolPrinterInfo
+} from "#winspool";
+export {
+  getWinspoolJobStatus,
+  monitorWinspoolJob
 } from "#winspool";
 
 export {
@@ -48,11 +74,14 @@ export type {
   SavedPrinterType,
   SavePrinterInput,
   SaveNetworkPrinterInput,
+  SaveSystemPrinterInput,
+  SaveBluetoothPrinterInput,
   SaveSerialPrinterInput,
   SaveUsbPrinterInput
 } from "./api/printer-settings.js";
 export { listPrinters } from "./api/list-printers.js";
 export { print } from "./api/print.js";
+export { closeAllPrinters, closePrinter } from "./api/lifecycle.js";
 export { getStatus } from "./api/status.js";
 export { getPaperInfo, resolveColumns } from "./api/paper.js";
 export type { PaperInfoOptions } from "./api/paper.js";

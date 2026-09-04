@@ -5,18 +5,22 @@ import { dirname, join } from "node:path";
 
 import { PrinterError } from "#core";
 import type {
+  BluetoothBlePrinterTarget,
+  BluetoothSppPrinterTarget,
+  BluetoothSystemPrinterTarget,
   CupsPrinterTarget,
   NetworkPrinterTarget,
   PrinterTarget,
   RetryOptions,
   SerialPrinterTarget,
+  SystemPrinterTarget,
   WinspoolPrinterTarget
 } from "#core";
 import type { ReceiptEncoding } from "#core";
 
 // Settings types
 
-export type SavedPrinterType = "usb" | "serial" | "network";
+export type SavedPrinterType = "usb" | "system" | "serial" | "network" | "bluetooth";
 
 export interface PrinterSettingsConfig {
   filePath: string;
@@ -37,8 +41,10 @@ export interface SavedPrinter {
 
 export type SavePrinterInput =
   | SaveUsbPrinterInput
+  | SaveSystemPrinterInput
   | SaveSerialPrinterInput
-  | SaveNetworkPrinterInput;
+  | SaveNetworkPrinterInput
+  | SaveBluetoothPrinterInput;
 
 export interface SaveUsbPrinterInput {
   name: string;
@@ -59,6 +65,24 @@ export interface SaveNetworkPrinterInput extends Omit<NetworkPrinterTarget, "typ
   type: "network";
   receipt: ReceiptProfile;
 }
+
+export interface SaveSystemPrinterInput extends Omit<SystemPrinterTarget, "type"> {
+  name: string;
+  type: "system";
+  receipt: ReceiptProfile;
+}
+
+type SavePrinterFields = {
+  name: string;
+  type: "bluetooth";
+  receipt: ReceiptProfile;
+};
+
+export type SaveBluetoothPrinterInput = SavePrinterFields & (
+  | Omit<BluetoothSppPrinterTarget, "type">
+  | Omit<BluetoothSystemPrinterTarget, "type">
+  | Omit<BluetoothBlePrinterTarget, "type">
+);
 
 interface PrinterSettingsFile {
   printers: SavedPrinter[];
@@ -174,12 +198,41 @@ function createSavedPrinterTarget(input: SavePrinterInput): PrinterTarget {
     case "usb":
       return createUsbTarget(input);
 
+    case "system":
+      return createSystemTarget(input);
+
     case "serial":
       return createSerialTarget(input);
 
     case "network":
       return createNetworkTarget(input);
+
+    case "bluetooth":
+      return createBluetoothTarget(input);
   }
+}
+
+function createSystemTarget(input: SaveSystemPrinterInput): SystemPrinterTarget {
+  const { name, type, receipt, printerName, ...options } = input;
+
+  void name;
+  void type;
+  void receipt;
+
+  return {
+    type: "system",
+    printerName: normalizeText(printerName, "System printerName"),
+    ...options
+  };
+}
+
+function createBluetoothTarget(input: SaveBluetoothPrinterInput): PrinterTarget {
+  const { name, receipt, ...target } = input;
+
+  void name;
+  void receipt;
+
+  return target as PrinterTarget;
 }
 
 function createUsbTarget(input: SaveUsbPrinterInput): CupsPrinterTarget | WinspoolPrinterTarget {

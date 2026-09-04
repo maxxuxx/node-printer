@@ -20,7 +20,10 @@ describe("printer-network", () => {
       host     : "192.168.0.10",
       port     : 9100,
       timeoutMs: 5000,
-      chunkSize: 16 * 1024
+      chunkSize: 16 * 1024,
+      deliveryMode: "write",
+      settleMs: 500,
+      retry: { retries: 3 }
     });
   });
 
@@ -67,6 +70,30 @@ describe("printer-network", () => {
     await printer.print(Uint8Array.from([0x00, 0x1b, 0x1d, 0x0a, 0xff]));
 
     expect(sockets.items[0]?.writes).toEqual([[0x00, 0x1b], [0x1d, 0x0a], [0xff]]);
+  });
+
+  it("marks delivery acknowledged when status mode receives a response", async () => {
+    const sockets = new FakeSocketQueue({ statusResponse: true });
+    const printer = createNetworkPrinter(
+      {
+        type: "network",
+        host: "127.0.0.1",
+        deliveryMode: "status",
+        settleMs: 0
+      },
+      {
+        createConnection: sockets.createConnection,
+        sleep: async () => {}
+      }
+    );
+
+    const result = await printer.print(Uint8Array.from([1, 2, 3]));
+
+    expect(result.delivery).toEqual({
+      stage: "acknowledged",
+      confirmedBy: "device-status"
+    });
+    expect(sockets.items[0]?.writes).toHaveLength(2);
   });
 
   it("normalizes refused connections", async () => {
@@ -183,7 +210,7 @@ describe("printer-network", () => {
     expect(sockets.items).toHaveLength(1);
   });
 
-  it("normalizes unreachable network errors as non-retryable", async () => {
+  it("retries transient unreachable network errors", async () => {
     const sockets = new FakeSocketQueue();
     sockets.nextErrorCode = "EHOSTUNREACH";
 
@@ -199,10 +226,10 @@ describe("printer-network", () => {
       }
     );
 
-    await expect(printer.print(Uint8Array.from([1]))).rejects.toMatchObject({
-      code     : "ERR_NETWORK_UNREACHABLE",
-      retryable: false
-    });
+    const result = await printer.print(Uint8Array.from([1]));
+
+    expect(result.ok).toBe(true);
+    expect(sockets.items).toHaveLength(2);
   });
 
   it("serializes concurrent print calls on the same transport", async () => {
@@ -314,6 +341,7 @@ interface FakeBehavior {
   connect     ?: boolean;
   write       ?: boolean;
   backpressure?: boolean;
+  statusResponse?: boolean;
 }
 
 // 연결 시도마다 새 FakeSocket을 기록해 retry 횟수와 write 내용을 검증한다
@@ -398,6 +426,10 @@ class FakeSocket extends EventEmitter implements NetworkSocket {
 
     queueMicrotask(() => {
       callback();
+
+      if (this.behavior.statusResponse && data.byteLength > 3) {
+        this.emit("data", Uint8Array.from([0x16, 0x12, 0x12, 0x12]));
+      }
     });
 
     return true;

@@ -1,9 +1,11 @@
 import { PrinterError } from "#core";
 
 import type { CupsPrinterInfo } from "#cups";
+import type { BluetoothPrinterInfo } from "#bluetooth";
 import type { NetworkPrinterInfo } from "#network";
 import type { SerialPortInfo } from "#serial";
 import type { WinspoolPrinterInfo } from "#winspool";
+import type { SystemPrinterInfo } from "#system";
 import type {
   AnyListPrinterType,
   PrinterListResult,
@@ -25,6 +27,14 @@ export function listPrinters(
   type: "network",
   options?: PrinterMethodOptions
 ): Promise<NetworkPrinterInfo[]>;
+export function listPrinters(
+  type: "system",
+  options?: PrinterMethodOptions
+): Promise<SystemPrinterInfo[]>;
+export function listPrinters(
+  type: "bluetooth",
+  options?: PrinterMethodOptions
+): Promise<BluetoothPrinterInfo[]>;
 export function listPrinters(
   type: "cups",
   options?: PrinterMethodOptions
@@ -55,6 +65,18 @@ export async function listPrinters<TType extends AnyListPrinterType>(
       const { listNetworkPrinters } = await import("#network");
 
       return listNetworkPrinters(options.network) as Promise<PrinterListResult<TType>>;
+    }
+
+    case "system": {
+      const { listSystemPrinters } = await import("#system");
+
+      return listSystemPrinters(options.system) as Promise<PrinterListResult<TType>>;
+    }
+
+    case "bluetooth": {
+      const { listBluetoothPrinters } = await import("#bluetooth");
+
+      return listBluetoothPrinters(options.bluetooth) as Promise<PrinterListResult<TType>>;
     }
 
     case "cups": {

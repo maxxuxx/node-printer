@@ -93,6 +93,8 @@ describe("print", () => {
 
     expect(result.bytesWritten).toBe(3);
     expect(SerialPort.instances[0]?.written).toEqual([1, 2, 3]);
+    expect(SerialPort.instances[0]?.closed).toBe(false);
+    await api.closePrinter({ type: "serial", path: "COM3" }, { serial: { SerialPort } });
     expect(SerialPort.instances[0]?.closed).toBe(true);
   });
 

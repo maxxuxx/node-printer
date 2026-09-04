@@ -40,7 +40,11 @@ export class CupsPrinterTransport {
       target      : this.target,
       jobId       : parseJobId(result.stdout),
       bytesWritten: data.byteLength,
-      durationMs  : Date.now() - startedAt
+      durationMs  : Date.now() - startedAt,
+      delivery    : {
+        stage      : "spooled",
+        confirmedBy: "cups-job"
+      }
     };
   }
 }

@@ -32,7 +32,11 @@ export class WinspoolPrinterTransport implements WinspoolPrinter {
       target      : this.target,
       jobId       : result.jobId,
       bytesWritten: result.bytesWritten,
-      durationMs  : Date.now() - startedAt
+      durationMs  : Date.now() - startedAt,
+      delivery    : {
+        stage      : "spooled",
+        confirmedBy: "winspool-job"
+      }
     };
   }
 }

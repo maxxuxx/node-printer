@@ -113,6 +113,36 @@ describe("printer settings", () => {
     await expect(printer.listSavedPrinters()).resolves.toEqual([]);
   });
 
+  it("saves system and Bluetooth printer targets", async () => {
+    const { printer } = await loadConfiguredPrinterModule();
+    const system = await printer.savePrinter({
+      name       : "System Queue",
+      type       : "system",
+      printerName: "POS-80",
+      backend    : "auto",
+      receipt    : { encoding: "cp949", columns: 42 }
+    });
+    const bluetooth = await printer.savePrinter({
+      name    : "Bluetooth SPP",
+      type    : "bluetooth",
+      mode    : "spp",
+      path    : "COM7",
+      baudRate: 9600,
+      receipt : { encoding: "cp949", columns: 42 }
+    });
+
+    expect(system.target).toEqual({
+      type: "system",
+      printerName: "POS-80",
+      backend: "auto"
+    });
+    expect(bluetooth.target).toMatchObject({
+      type: "bluetooth",
+      mode: "spp",
+      path: "COM7"
+    });
+  });
+
   it("updates a saved printer while keeping the id", async () => {
     const { filePath, printer } = await loadConfiguredPrinterModule();
     const saved = await printer.savePrinter({

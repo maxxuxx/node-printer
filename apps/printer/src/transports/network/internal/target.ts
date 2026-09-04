@@ -1,7 +1,13 @@
 import { PrinterError, type NetworkPrinterTarget } from "#core";
 
 import type { NormalizedNetworkPrinterTarget } from "../types.js";
-import { DEFAULT_CHUNK_SIZE, DEFAULT_PORT, DEFAULT_TIMEOUT_MS } from "./defaults.js";
+import {
+  DEFAULT_CHUNK_SIZE,
+  DEFAULT_DELIVERY_MODE,
+  DEFAULT_PORT,
+  DEFAULT_SETTLE_MS,
+  DEFAULT_TIMEOUT_MS
+} from "./defaults.js";
 import { normalizeRetry } from "./retry.js";
 
 // Target normalization
@@ -19,6 +25,7 @@ export function normalizeNetworkTarget(
   const port      = target.port ?? DEFAULT_PORT;
   const timeoutMs = target.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const chunkSize = target.chunkSize ?? DEFAULT_CHUNK_SIZE;
+  const settleMs = target.settleMs ?? DEFAULT_SETTLE_MS;
 
   if (!Number.isInteger(port) || port < 1 || port > 65535) {
     throw new PrinterError({
@@ -41,12 +48,21 @@ export function normalizeNetworkTarget(
     });
   }
 
+  if (!Number.isInteger(settleMs) || settleMs < 0) {
+    throw new PrinterError({
+      code   : "ERR_INVALID_TARGET",
+      message: "Network printer settleMs cannot be negative"
+    });
+  }
+
   return {
     type     : "network",
     host     : target.host,
     port,
     timeoutMs,
     retry    : normalizeRetry(target.retry),
-    chunkSize
+    chunkSize,
+    deliveryMode: target.deliveryMode ?? DEFAULT_DELIVERY_MODE,
+    settleMs
   };
 }

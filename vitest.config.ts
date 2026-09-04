@@ -4,10 +4,12 @@ import { defineConfig } from "vitest/config";
 
 // 테스트에서 빌드 산출물 대신 각 패키지의 현재 소스를 직접 바라보게 합니다
 const workspacePackages = {
+  "#bluetooth": "./apps/printer/src/transports/bluetooth/index.ts",
   "#core"    : "./apps/printer/src/core/index.ts",
   "#cups"    : "./apps/printer/src/transports/cups/index.ts",
   "#network" : "./apps/printer/src/transports/network/index.ts",
   "#serial"  : "./apps/printer/src/transports/serial/index.ts",
+  "#system"  : "./apps/printer/src/transports/system/index.ts",
   "#winspool": "./apps/printer/src/transports/winspool/index.ts"
 };
 
