@@ -58,7 +58,7 @@ export class NetworkPrinterTransport {
       return;
     }
 
-    socket.end();
+    socket.destroy();
   }
 
   destroy(error?: Error): void {
@@ -207,7 +207,7 @@ export class NetworkPrinterTransport {
         acknowledged = true;
       }
 
-      socket.end();
+      socket.destroy();
 
       return { bytesWritten: written, acknowledged };
     } catch (error) {
@@ -218,7 +218,7 @@ export class NetworkPrinterTransport {
         code        : normalized.code,
         message     : normalized.message,
         cause       : normalized.cause,
-        retryable   : false,
+        retryable   : written === 0,
         partial     : written > 0 && written < data.byteLength,
         bytesWritten: written
       });
@@ -235,6 +235,8 @@ export class NetworkPrinterTransport {
       port: this.target.port
     });
 
+    // 단계별 listener가 해제된 뒤 프린터가 RST를 보내도 process로 새지 않게 합니다.
+    socket.on?.("error", ignoreLateSocketError);
     this.socket = socket;
 
     try {
@@ -251,6 +253,8 @@ export class NetworkPrinterTransport {
     return socket;
   }
 }
+
+function ignoreLateSocketError(): void {}
 
 // 응답 청크들을 하나의 Uint8Array로 합칩니다
 function concatChunks(chunks: Uint8Array[]): Uint8Array {

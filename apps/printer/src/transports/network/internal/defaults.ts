@@ -1,5 +1,5 @@
 export const DEFAULT_PORT           = 9100;
-export const DEFAULT_TIMEOUT_MS     = 5000;
+export const DEFAULT_TIMEOUT_MS     = 3000;
 export const DEFAULT_CHUNK_SIZE     = 16 * 1024;
 export const DEFAULT_RETRIES        = 3;
 export const DEFAULT_RETRY_DELAY_MS = 100;

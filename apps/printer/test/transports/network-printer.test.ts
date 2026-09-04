@@ -19,7 +19,7 @@ describe("printer-network", () => {
       type     : "network",
       host     : "192.168.0.10",
       port     : 9100,
-      timeoutMs: 5000,
+      timeoutMs: 3000,
       chunkSize: 16 * 1024,
       deliveryMode: "write",
       settleMs: 500,
@@ -147,8 +147,9 @@ describe("printer-network", () => {
 
     await expect(printer.print(Uint8Array.from([1]))).rejects.toMatchObject({
       code: "ERR_WRITE_TIMEOUT",
-      retryable: false
+      retryable: true
     });
+    expect(sockets.items).toHaveLength(4);
   });
 
   it("retries retryable connection failures", async () => {
@@ -276,6 +277,29 @@ describe("printer-network", () => {
     expect(result.bytesWritten).toBe(3);
     // backpressure 분기에서 drain 이벤트가 발생했음을 표시값으로 확인한다
     expect(sockets.items[0]?.drainEmits).toBeGreaterThan(0);
+  });
+
+  it("contains a late ECONNRESET after the write completed", async () => {
+    const sockets = new FakeSocketQueue();
+    const printer = createNetworkPrinter(
+      {
+        type    : "network",
+        host    : "127.0.0.1",
+        settleMs: 0
+      },
+      {
+        createConnection: sockets.createConnection,
+        sleep: async () => {}
+      }
+    );
+
+    await printer.print(Uint8Array.from([1, 2, 3]));
+
+    const error = Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" });
+    const socket = sockets.items[0];
+
+    expect(socket?.destroyed).toBe(true);
+    expect(() => socket?.emit("error", error)).not.toThrow();
   });
 });
 

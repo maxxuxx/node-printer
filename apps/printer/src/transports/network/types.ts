@@ -43,6 +43,7 @@ export interface NetworkSocket {
 
   // 상태 조회 응답을 읽기 위한 data 이벤트 구독입니다 (node net.Socket 제공)
   on?(event: "data", listener: (chunk: Uint8Array) => void): unknown;
+  on?(event: "error", listener: (error: Error) => void): unknown;
 }
 
 export interface NetworkPrinterDependencies {
