@@ -1,6 +1,6 @@
 import { PrinterError, type PrinterStatus, type WinspoolPrinterTarget } from "#core";
 
-import { assertWindows, loadWinspoolBinding } from "../binding.js";
+import { resolveWinspoolBinding } from "../binding.js";
 import type { WinspoolBinding } from "../types.js";
 import { listWinspoolPrinters } from "./list-printers.js";
 
@@ -39,11 +39,9 @@ export function decodeWinspoolStatus(status: number): Omit<PrinterStatus, "targe
 // winspool 프린터 목록에서 대상 프린터의 status를 찾아 상태를 조회합니다
 export async function getWinspoolStatus(
   target: WinspoolPrinterTarget,
-  binding: WinspoolBinding = loadWinspoolBinding()
+  binding?: WinspoolBinding
 ): Promise<PrinterStatus> {
-  assertWindows();
-
-  const printers = await listWinspoolPrinters(binding);
+  const printers = await listWinspoolPrinters(resolveWinspoolBinding(binding));
   const printer  = printers.find((item) => item.name === target.printerName);
 
   if (!printer) {

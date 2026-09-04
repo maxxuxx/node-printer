@@ -18,7 +18,7 @@ describe("winspool job status", () => {
   it("returns completed when the spooler already removed the job", async () => {
     const binding = fakeBinding([null]);
 
-    await expect(getWinspoolJobStatus(target, 10, binding)).resolves.toMatchObject({
+    await expect(withPlatform("linux", () => getWinspoolJobStatus(target, 10, binding))).resolves.toMatchObject({
       jobId: 10,
       state: "completed"
     });
@@ -31,6 +31,17 @@ describe("winspool job status", () => {
     expect(status.state).toBe("completed");
   });
 });
+
+async function withPlatform<T>(platform: NodeJS.Platform, run: () => Promise<T>): Promise<T> {
+  const descriptor = Object.getOwnPropertyDescriptor(process, "platform");
+  Object.defineProperty(process, "platform", { configurable: true, value: platform });
+
+  try {
+    return await run();
+  } finally {
+    if (descriptor) Object.defineProperty(process, "platform", descriptor);
+  }
+}
 
 function job(status: number): WinspoolJobInfo {
   return { jobId: 10, status, position: 1, totalPages: 1, pagesPrinted: 0 };

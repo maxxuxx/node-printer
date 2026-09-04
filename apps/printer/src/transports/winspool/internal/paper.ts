@@ -1,6 +1,6 @@
 import { PrinterError, type PaperCapabilities, type WinspoolPrinterTarget } from "#core";
 
-import { assertWindows, loadWinspoolBinding } from "../binding.js";
+import { resolveWinspoolBinding } from "../binding.js";
 import type { WinspoolBinding } from "../types.js";
 
 // Paper capabilities
@@ -8,19 +8,19 @@ import type { WinspoolBinding } from "../types.js";
 // 드라이버에 설정된 용지 너비 정보를 native(GetDeviceCaps)에서 조회합니다
 export async function getWinspoolPaperInfo(
   target: WinspoolPrinterTarget,
-  binding: WinspoolBinding = loadWinspoolBinding()
+  binding?: WinspoolBinding
 ): Promise<PaperCapabilities> {
-  assertWindows();
+  const resolvedBinding = resolveWinspoolBinding(binding);
 
   // 구버전 prebuild로는 capabilities 함수가 없을 수 있어 명시 오류로 안내합니다
-  if (typeof binding.getPrinterCapabilities !== "function") {
+  if (typeof resolvedBinding.getPrinterCapabilities !== "function") {
     throw new PrinterError({
       code   : "ERR_NATIVE_MODULE_UNAVAILABLE",
       message: "Winspool prebuild does not support getPrinterCapabilities. Rebuild the native prebuild."
     });
   }
 
-  const capabilities = await binding.getPrinterCapabilities(target.printerName);
+  const capabilities = await resolvedBinding.getPrinterCapabilities(target.printerName);
 
   return {
     printableWidthDots: toPositive(capabilities.printableWidthDots),

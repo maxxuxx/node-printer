@@ -14,6 +14,7 @@ on:
       - "eslint.config.js"
       - "vitest.config.ts"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/publish.yml"
       - "!**/*.md"
       - "!**/*.mdx"
       - "!apps/test-server/public/**"
@@ -28,57 +29,86 @@ on:
       - "eslint.config.js"
       - "vitest.config.ts"
       - ".github/workflows/ci.yml"
+      - ".github/workflows/publish.yml"
       - "!**/*.md"
       - "!**/*.mdx"
       - "!apps/test-server/public/**"
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+
 jobs:
-  test:
-    name: Node ${{ matrix.node }} on ${{ matrix.os }}
+  quality:
+    name: Quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@22
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          require-lockfile: true
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  platform-test:
+    name: Test on ${{ matrix.os }}
+    needs: quality
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        node:
-          - 22.x
         os:
-          - ubuntu-latest
           - ubuntu-24.04-arm
           - macos-latest
           - windows-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@v2
         with:
-          node-version: ${{ matrix.node }}
+          runtime: node@22
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          require-lockfile: true
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: corepack pnpm install --frozen-lockfile
-
-      - name: Lint
-        run: corepack pnpm lint
-
-      - name: Typecheck
-        run: corepack pnpm typecheck
-
-      - name: Test
-        run: corepack pnpm test
-
-      - name: Build
-        run: corepack pnpm build
+      - name: Test package
+        run: pnpm --filter @maxxuxx/node-printer test
 
   prebuild-winspool:
     name: Winspool prebuild ${{ matrix.arch }}
+    needs: platform-test
     runs-on: windows-2022
+    timeout-minutes: 15
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         arch:
           - x64
@@ -87,24 +117,21 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22.x
+          node-version: 24.x
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: corepack pnpm install --frozen-lockfile
-
-      - name: Build package
-        run: corepack pnpm --filter @maxxuxx/node-printer build
+      - name: Cache Node 20 native headers
+        uses: actions/cache@v5
+        with:
+          path: apps/printer/.native-cache
+          key: winspool-native-node20-${{ matrix.arch }}-v1
 
       - name: Build prebuild (${{ matrix.arch }})
-        run: corepack pnpm --filter @maxxuxx/node-printer prebuild:${{ matrix.arch }}
+        run: node apps/printer/scripts/prebuild-winspool.cjs ${{ matrix.arch }}
 
       - name: Check prebuild output
         shell: pwsh
@@ -121,32 +148,34 @@ jobs:
           name: winspool-prebuild-win32-${{ matrix.arch }}
           path: apps/printer/prebuilds/win32-${{ matrix.arch }}/@node-printer+winspool.node
           if-no-files-found: error
+          retention-days: 7
 
-  pack-winspool:
-    name: Winspool package contents
+  package:
+    name: Verified npm package
+    needs:
+      - quality
+      - platform-test
+      - prebuild-winspool
     runs-on: windows-2022
-    needs: prebuild-winspool
+    timeout-minutes: 15
     permissions:
       actions: read
       contents: read
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup pnpm and Node
+        uses: pnpm/setup@v2
         with:
-          node-version: 22.x
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install dependencies
-        run: corepack pnpm install --frozen-lockfile
+          runtime: node@22
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          require-lockfile: true
 
       - name: Build package
-        run: corepack pnpm --filter @maxxuxx/node-printer build
+        run: pnpm --filter @maxxuxx/node-printer build
 
       - name: Download prebuild artifacts
         shell: pwsh
@@ -157,5 +186,22 @@ jobs:
           gh run download ${{ github.run_id }} --name winspool-prebuild-win32-ia32 --dir apps/printer/prebuilds/win32-ia32
           gh run download ${{ github.run_id }} --name winspool-prebuild-win32-arm64 --dir apps/printer/prebuilds/win32-arm64
 
-      - name: Check package contents
-        run: corepack pnpm --filter @maxxuxx/node-printer pack:check
+      - name: Create verified package
+        shell: pwsh
+        run: |
+          $artifactDir = Join-Path $env:GITHUB_WORKSPACE "artifacts"
+          New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+          Push-Location apps/printer
+          try {
+            corepack pnpm pack --pack-destination $artifactDir
+          } finally {
+            Pop-Location
+          }
+
+      - name: Upload npm package
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-package
+          path: artifacts/*.tgz
+          if-no-files-found: error
+          retention-days: 7

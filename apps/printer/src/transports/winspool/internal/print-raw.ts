@@ -1,4 +1,4 @@
-import { assertWindows, loadWinspoolBinding } from "../binding.js";
+import { resolveWinspoolBinding } from "../binding.js";
 import type { WinspoolBinding, WinspoolPrintRawOptions } from "../types.js";
 import { DEFAULT_DOCUMENT_NAME } from "./defaults.js";
 import { validatePrintRawOptions } from "./validation.js";
@@ -7,17 +7,17 @@ import { validatePrintRawOptions } from "./validation.js";
 
 export async function printRaw(
   options: WinspoolPrintRawOptions,
-  binding: WinspoolBinding = loadWinspoolBinding()
+  binding?: WinspoolBinding
 ): Promise<{
   ok          : true;
   printerName : string;
   jobId      ?: number;
   bytesWritten: number;
 }> {
-  assertWindows();
   validatePrintRawOptions(options);
+  const resolvedBinding = resolveWinspoolBinding(binding);
 
-  const result = await binding.printRaw({
+  const result = await resolvedBinding.printRaw({
     ...options,
     documentName: options.documentName ?? DEFAULT_DOCUMENT_NAME
   });

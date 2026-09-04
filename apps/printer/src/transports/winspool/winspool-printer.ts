@@ -1,6 +1,6 @@
 import type { WinspoolPrinterTarget } from "#core";
 
-import { assertWindows, loadWinspoolBinding } from "./binding.js";
+import { resolveWinspoolBinding } from "./binding.js";
 import {
   getDefaultWinspoolPrinter,
   listWinspoolPrinters
@@ -16,10 +16,9 @@ export { getDefaultWinspoolPrinter, listWinspoolPrinters, printRaw };
 
 export function createWinspoolPrinter(
   target: WinspoolPrinterTarget,
-  binding: WinspoolBinding = loadWinspoolBinding()
+  binding?: WinspoolBinding
 ): WinspoolPrinter {
-  assertWindows();
   validateWinspoolTarget(target);
 
-  return new WinspoolPrinterTransport(target, binding);
+  return new WinspoolPrinterTransport(target, resolveWinspoolBinding(binding));
 }

@@ -87,6 +87,12 @@ function getPackageRoot(): string {
   );
 }
 
+// 명시적으로 주입된 binding은 테스트/대체 구현으로 보고 platform guard를 우회합니다.
+// 실제 런타임에서 binding이 없으면 기존과 동일하게 Windows prebuild만 로드합니다.
+export function resolveWinspoolBinding(binding?: WinspoolBinding): WinspoolBinding {
+  return binding ?? loadWinspoolBinding();
+}
+
 type PackageEntryResolver = () => string;
 
 export function resolveWinspoolPackageRoot(

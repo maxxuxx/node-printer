@@ -1,6 +1,6 @@
 import { PrinterError, type WinspoolPrinterTarget } from "#core";
 
-import { assertWindows, loadWinspoolBinding } from "../binding.js";
+import { resolveWinspoolBinding } from "../binding.js";
 import type {
   WinspoolBinding,
   WinspoolJobInfo,
@@ -28,9 +28,9 @@ const DEFAULT_POLL_MS = 250;
 export async function getWinspoolJobStatus(
   target: WinspoolPrinterTarget,
   jobId: number,
-  binding: WinspoolBinding = loadWinspoolBinding()
+  binding?: WinspoolBinding
 ): Promise<WinspoolJobStatus> {
-  assertWindows();
+  const resolvedBinding = resolveWinspoolBinding(binding);
 
   if (!Number.isInteger(jobId) || jobId <= 0) {
     throw new PrinterError({
@@ -39,14 +39,14 @@ export async function getWinspoolJobStatus(
     });
   }
 
-  if (!binding.getJobInfo) {
+  if (!resolvedBinding.getJobInfo) {
     throw new PrinterError({
       code   : "ERR_NATIVE_MODULE_UNAVAILABLE",
       message: "Winspool prebuild does not support getJobInfo. Rebuild the native prebuild."
     });
   }
 
-  const info = await binding.getJobInfo(target.printerName, jobId);
+  const info = await resolvedBinding.getJobInfo(target.printerName, jobId);
 
   return info
     ? { jobId, state: decodeWinspoolJobState(info), raw: info }
@@ -57,7 +57,7 @@ export async function monitorWinspoolJob(
   target: WinspoolPrinterTarget,
   jobId: number,
   options: WinspoolJobMonitorOptions = {},
-  binding: WinspoolBinding = loadWinspoolBinding()
+  binding?: WinspoolBinding
 ): Promise<WinspoolJobStatus> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_MONITOR_TIMEOUT_MS;
   const pollMs    = options.pollMs ?? DEFAULT_POLL_MS;

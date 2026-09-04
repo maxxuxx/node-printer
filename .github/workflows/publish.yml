@@ -9,20 +9,25 @@ on:
     types:
       - completed
 
+concurrency:
+  group: publish-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
 jobs:
   publish:
     if: github.repository == 'maxxuxx/node-printer' && github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
       id-token: write
 
     steps:
-      - name: Checkout
+      - name: Checkout verified revision
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v6
@@ -31,32 +36,29 @@ jobs:
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
 
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Install
-        run: corepack pnpm install --frozen-lockfile
-
-      - name: Download prebuild artifacts
+      - name: Download verified package
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh run download ${{ github.event.workflow_run.id }} --name winspool-prebuild-win32-x64 --dir apps/printer/prebuilds/win32-x64
-          gh run download ${{ github.event.workflow_run.id }} --name winspool-prebuild-win32-ia32 --dir apps/printer/prebuilds/win32-ia32
-          gh run download ${{ github.event.workflow_run.id }} --name winspool-prebuild-win32-arm64 --dir apps/printer/prebuilds/win32-arm64
+          mkdir -p artifacts
+          gh run download "${{ github.event.workflow_run.id }}" --name npm-package --dir artifacts
 
-      - name: Verify
-        run: corepack pnpm run verify
-
-      - name: Check published version
+      - name: Resolve package metadata
         id: package
         shell: bash
         run: |
           name="$(node -p "require('./apps/printer/package.json').name")"
           version="$(node -p "require('./apps/printer/package.json').version")"
+          package_file="$(find artifacts -maxdepth 1 -name '*.tgz' -print -quit)"
+
+          if [ -z "$package_file" ]; then
+            echo "Verified npm package artifact is missing" >&2
+            exit 1
+          fi
 
           echo "name=$name" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "package_file=$package_file" >> "$GITHUB_OUTPUT"
 
           if npm view "$name@$version" version > /dev/null 2>&1; then
             echo "published=true" >> "$GITHUB_OUTPUT"
@@ -64,10 +66,27 @@ jobs:
             echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Publish to npm
+      - name: Publish verified package
         if: steps.package.outputs.published == 'false'
-        working-directory: apps/printer
-        run: npm publish --access public
+        run: npm publish "${{ steps.package.outputs.package_file }}" --access public --provenance
+
+      - name: Verify npm registry
+        if: steps.package.outputs.published == 'false'
+        run: |
+          expected="${{ steps.package.outputs.version }}"
+
+          for attempt in 1 2 3 4 5 6; do
+            actual="$(npm view "${{ steps.package.outputs.name }}@$expected" version 2>/dev/null || true)"
+
+            if [ "$actual" = "$expected" ]; then
+              exit 0
+            fi
+
+            sleep 5
+          done
+
+          echo "npm registry did not expose $expected within 30 seconds" >&2
+          exit 1
 
       - name: Skip existing version
         if: steps.package.outputs.published == 'true'

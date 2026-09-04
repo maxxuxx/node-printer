@@ -1,16 +1,16 @@
-import { assertWindows, loadWinspoolBinding } from "../binding.js";
+import { resolveWinspoolBinding } from "../binding.js";
 import type { WinspoolBinding, WinspoolPrinterInfo } from "../types.js";
 
 // Printer discovery
 
 export async function listWinspoolPrinters(
-  binding: WinspoolBinding = loadWinspoolBinding()
+  binding?: WinspoolBinding
 ): Promise<WinspoolPrinterInfo[]> {
-  assertWindows();
+  const resolvedBinding = resolveWinspoolBinding(binding);
 
   const [printers, defaultPrinterName] = await Promise.all([
-    binding.listPrinters(),
-    binding.getDefaultPrinter()
+    resolvedBinding.listPrinters(),
+    resolvedBinding.getDefaultPrinter()
   ]);
 
   return printers.map((printer) => ({
@@ -20,17 +20,17 @@ export async function listWinspoolPrinters(
 }
 
 export async function getDefaultWinspoolPrinter(
-  binding: WinspoolBinding = loadWinspoolBinding()
+  binding?: WinspoolBinding
 ): Promise<WinspoolPrinterInfo | null> {
-  assertWindows();
+  const resolvedBinding = resolveWinspoolBinding(binding);
 
-  const defaultPrinterName = await binding.getDefaultPrinter();
+  const defaultPrinterName = await resolvedBinding.getDefaultPrinter();
 
   if (!defaultPrinterName) {
     return null;
   }
 
-  const printer = (await listWinspoolPrinters(binding)).find(
+  const printer = (await listWinspoolPrinters(resolvedBinding)).find(
     (item) => item.name === defaultPrinterName
   );
 
