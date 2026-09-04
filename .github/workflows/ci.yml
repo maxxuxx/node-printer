@@ -45,95 +45,90 @@ env:
   CI: true
 
 jobs:
-  quality:
-    name: Quality gate
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup pnpm and Node
-        uses: pnpm/setup@v2
-        with:
-          runtime: node@22
-          cache: true
-          cache-dependency-path: pnpm-lock.yaml
-          require-lockfile: true
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Build
-        run: pnpm build
-
-  platform-test:
-    name: Test on ${{ matrix.os }}
-    needs: quality
+  validation:
+    name: ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
-    strategy:
-      fail-fast: true
-      matrix:
-        os:
-          - ubuntu-24.04-arm
-          - macos-latest
-          - windows-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup pnpm and Node
-        uses: pnpm/setup@v2
-        with:
-          runtime: node@22
-          cache: true
-          cache-dependency-path: pnpm-lock.yaml
-          require-lockfile: true
-
-      - name: Test package
-        run: pnpm --filter @maxxuxx/node-printer test
-
-  prebuild-winspool:
-    name: Winspool prebuild ${{ matrix.arch }}
-    needs: platform-test
-    runs-on: windows-2022
     timeout-minutes: 15
     strategy:
       fail-fast: true
       matrix:
-        arch:
-          - x64
-          - ia32
-          - arm64
+        include:
+          - task: quality
+            label: Quality gate
+            os: ubuntu-latest
+          - task: test
+            label: Test on ubuntu-24.04-arm
+            os: ubuntu-24.04-arm
+          - task: test
+            label: Test on macos-latest
+            os: macos-latest
+          - task: test
+            label: Test on windows-latest
+            os: windows-latest
+          - task: prebuild
+            label: Winspool prebuild x64
+            os: windows-2022
+            arch: x64
+          - task: prebuild
+            label: Winspool prebuild ia32
+            os: windows-2022
+            arch: ia32
+          - task: prebuild
+            label: Winspool prebuild arm64
+            os: windows-2022
+            arch: arm64
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Setup pnpm and Node
+        if: matrix.task != 'prebuild'
+        uses: pnpm/setup@v2
+        with:
+          runtime: node@22
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Lint
+        if: matrix.task == 'quality'
+        run: pnpm lint
+
+      - name: Typecheck
+        if: matrix.task == 'quality'
+        run: pnpm typecheck
+
+      - name: Test
+        if: matrix.task == 'quality'
+        run: pnpm test
+
+      - name: Build
+        if: matrix.task == 'quality'
+        run: pnpm build
+
+      - name: Test package
+        if: matrix.task == 'test'
+        run: pnpm --filter @maxxuxx/node-printer test
+
       - name: Setup Node
+        if: matrix.task == 'prebuild'
         uses: actions/setup-node@v6
         with:
           node-version: 24.x
 
       - name: Cache Node 20 native headers
+        if: matrix.task == 'prebuild'
         uses: actions/cache@v5
         with:
           path: apps/printer/.native-cache
           key: winspool-native-node20-${{ matrix.arch }}-v1
 
       - name: Build prebuild (${{ matrix.arch }})
+        if: matrix.task == 'prebuild'
         run: node apps/printer/scripts/prebuild-winspool.cjs ${{ matrix.arch }}
 
       - name: Check prebuild output
+        if: matrix.task == 'prebuild'
         shell: pwsh
         run: |
           $path = "apps/printer/prebuilds/win32-${{ matrix.arch }}/@node-printer+winspool.node"
@@ -143,7 +138,8 @@ jobs:
           }
 
       - name: Upload prebuild artifact
-        uses: actions/upload-artifact@v4
+        if: matrix.task == 'prebuild'
+        uses: actions/upload-artifact@v6
         with:
           name: winspool-prebuild-win32-${{ matrix.arch }}
           path: apps/printer/prebuilds/win32-${{ matrix.arch }}/@node-printer+winspool.node
@@ -152,11 +148,8 @@ jobs:
 
   package:
     name: Verified npm package
-    needs:
-      - quality
-      - platform-test
-      - prebuild-winspool
-    runs-on: windows-2022
+    needs: validation
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       actions: read
@@ -172,13 +165,11 @@ jobs:
           runtime: node@22
           cache: true
           cache-dependency-path: pnpm-lock.yaml
-          require-lockfile: true
 
       - name: Build package
         run: pnpm --filter @maxxuxx/node-printer build
 
       - name: Download prebuild artifacts
-        shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -187,19 +178,12 @@ jobs:
           gh run download ${{ github.run_id }} --name winspool-prebuild-win32-arm64 --dir apps/printer/prebuilds/win32-arm64
 
       - name: Create verified package
-        shell: pwsh
         run: |
-          $artifactDir = Join-Path $env:GITHUB_WORKSPACE "artifacts"
-          New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
-          Push-Location apps/printer
-          try {
-            corepack pnpm pack --pack-destination $artifactDir
-          } finally {
-            Pop-Location
-          }
+          mkdir -p artifacts
+          pnpm --dir apps/printer pack --pack-destination "$GITHUB_WORKSPACE/artifacts"
 
       - name: Upload npm package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: npm-package
           path: artifacts/*.tgz
